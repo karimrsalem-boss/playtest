@@ -1,0 +1,1356 @@
+<!-- Copyright (c) 2026 DMK INTEGRATIONS - FZCO. All rights reserved. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="copyright" content="© 2026 DMK INTEGRATIONS - FZCO">
+<title>Lantern Drift</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%23241a52'/%3E%3Ccircle cx='256' cy='270' r='190' fill='%23ffb347' opacity='.22'/%3E%3Crect x='236' y='60' width='40' height='50' rx='12' fill='%236b3a6e'/%3E%3Cellipse cx='256' cy='270' rx='130' ry='150' fill='%23ffd166'/%3E%3Crect x='206' y='400' width='100' height='36' rx='12' fill='%236b3a6e'/%3E%3Ccircle cx='214' cy='260' r='14' fill='%233a1f45'/%3E%3Ccircle cx='298' cy='260' r='14' fill='%233a1f45'/%3E%3Cpath d='M216 316q40 36 80 0' stroke='%233a1f45' stroke-width='12' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23241a52'/%3E%3Cellipse cx='256' cy='270' rx='130' ry='150' fill='%23ffd166'/%3E%3Ccircle cx='214' cy='260' r='14' fill='%233a1f45'/%3E%3Ccircle cx='298' cy='260' r='14' fill='%233a1f45'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#140f2e;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff4e0;user-select:none;-webkit-user-select:none;touch-action:pan-y pinch-zoom}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.screen{position:fixed;inset:0;display:none;overflow-y:auto;background:rgba(24,16,58,.62);touch-action:pan-y pinch-zoom}
+.screen.on{display:flex}
+.panel{margin:auto;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:14px;max-width:460px;width:100%;text-align:center}
+h1{margin:0;font-size:44px;letter-spacing:1px;color:#ffd27a;text-shadow:0 3px 0 #6b3a6e}
+h2{margin:0;font-size:34px;color:#ffc9a8;text-shadow:0 3px 0 #6b3a6e}
+.sub{margin:0;opacity:.85;font-size:17px}
+.btn{font:inherit;font-weight:700;font-size:20px;border:0;border-radius:999px;min-height:48px;min-width:48px;justify-content:center;padding:14px 30px;background:#ffb347;color:#3a1f45;box-shadow:0 5px 0 #b86a2a;cursor:pointer;display:inline-flex;align-items:center;gap:10px;touch-action:manipulation}
+.btn:focus-visible{outline:3px solid #8ff0c8;outline-offset:3px}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #b86a2a}
+.btn.big{font-size:26px;padding:16px 46px}
+.btn.ghost{background:#4a3478;color:#fff4e0;box-shadow:0 5px 0 #2b1d4d;font-size:16px;padding:10px 22px;min-height:48px}
+.btn[disabled]{opacity:.5}
+.ico{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.how{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;font-size:14px;opacity:.9}
+.how div{display:flex;flex-direction:column;align-items:center;gap:4px;width:100px;color:#8ff0c8}
+.how span{color:#fff4e0}
+#logo{width:120px;height:120px}
+#finalGlow{font-size:22px;font-weight:700;color:#ffd27a}
+#awards{display:flex;flex-direction:column;gap:8px;width:100%}
+.award{display:flex;align-items:center;gap:12px;background:#3a2a66;border-radius:14px;padding:10px 14px;text-align:left;box-shadow:0 3px 0 #22183f}
+.award .ico{color:#8ff0c8;width:32px;height:32px}
+.award b{display:block;color:#ffd27a;font-size:15px}
+.award i{font-style:normal;font-size:15px}
+#board{width:100%;font-size:15px;display:flex;flex-direction:column;gap:3px}
+#board div{display:flex;justify-content:space-between;padding:3px 12px;border-radius:8px;background:rgba(255,255,255,.06)}
+#board .me{background:#ffb34740;font-weight:700}
+#postcard{width:min(72vw,280px);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.earnbox{display:flex;flex-direction:column;gap:8px;align-items:center;font-size:14px}
+.sec{font-size:15px;font-weight:700;color:#ffd27a;margin:4px 0 -4px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.chip{font:inherit;font-size:14px;font-weight:600;min-height:44px;min-width:44px;padding:6px 12px;border-radius:999px;border:3px solid transparent;background:#4a3478;color:#fff4e0;cursor:pointer;touch-action:manipulation}
+.chip.sel{border-color:#ffd27a;background:#6b4a98}
+.chip:focus-visible{outline:3px solid #8ff0c8;outline-offset:2px}
+.swatch{width:44px;height:44px;padding:0;border-radius:50%;border:3px solid #22183f}
+.swatch.sel{border-color:#fff4e0}
+#colRow,#patRow,#skyRow,#setRow{gap:6px}
+.prevbox{position:sticky;top:0;z-index:2;align-self:stretch;display:flex;justify-content:center;padding:4px 0;background:rgba(24,16,58,.92);border-radius:0 0 16px 16px}
+#prevLantern{width:96px;height:106px}
+#loading{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#140f2e;color:#ffd27a;font-size:20px;font-weight:700}
+#loading.off{display:none}
+#loadbar{width:min(60vw,220px);height:8px;border-radius:99px;background:#3a2a66;overflow:hidden}
+#loadbar i{display:block;height:100%;width:40%;border-radius:99px;background:#ffb347;animation:ldslide 1.2s ease-in-out infinite alternate}
+@keyframes ldslide{from{margin-left:0}to{margin-left:60%}}
+.sr{position:fixed;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sr button:focus-visible{position:fixed;left:8px;top:8px;width:auto;height:auto;clip:auto;z-index:30;padding:10px 16px;font:inherit;font-weight:700;background:#ffb347;color:#3a1f45;border:0;border-radius:99px}
+#skipTut{position:fixed;left:50%;bottom:calc(130px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:4;min-height:48px;padding:8px 20px;font-size:15px;opacity:.9}
+#skipTut[hidden]{display:none}
+#toast{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);background:#3a2a66;padding:8px 16px;border-radius:999px;display:none;font-size:15px;z-index:5}
+</style>
+</head>
+<body>
+<div id="loading" role="status"><canvas id="loadLogo" width="120" height="120"></canvas><span id="loadTxt" data-s="loading"></span><div id="loadbar"><i></i></div></div>
+<canvas id="c" role="img"></canvas>
+<button id="skipTut" class="btn ghost" type="button" hidden>Skip how-to</button>
+<div id="a11y" class="sr" hidden>
+  <p id="a11yStatus" role="status" aria-live="polite"></p>
+  <button id="aPause" type="button"></button><button id="aMute" type="button"></button>
+  <button id="aPulse" type="button"></button><button id="aDim" type="button"></button>
+</div>
+
+<div id="title" class="screen on"><div class="panel">
+  <canvas id="logo" width="240" height="240"></canvas>
+  <h1 data-s="title"></h1>
+  <p class="sub" data-s="tagline"></p>
+  <button id="playBtn" class="btn big"><svg class="ico" viewBox="0 0 24 24" data-i="spark"></svg><span data-s="play"></span></button>
+  <div class="row">
+    <button id="customBtn" class="btn ghost"><svg class="ico" viewBox="0 0 24 24" data-i="lantern"></svg><span data-s="customise"></span></button>
+    <button id="soundBtn" class="btn ghost"><svg class="ico" viewBox="0 0 24 24" data-i="sound"></svg><span id="soundTxt"></span></button>
+  </div>
+  <div class="how">
+    <div><svg class="ico" viewBox="0 0 24 24" data-i="link"></svg><span data-s="howLink"></span></div>
+    <div><svg class="ico" viewBox="0 0 24 24" data-i="pulse"></svg><span data-s="howPulse"></span></div>
+    <div><svg class="ico" viewBox="0 0 24 24" data-i="dim"></svg><span data-s="howDim"></span></div>
+  </div>
+  <p class="sub" style="font-size:13px" data-s="hintKeys"></p>
+  <p class="sub" style="font-size:12px;opacity:.7">© 2026 DMK INTEGRATIONS - FZCO</p>
+</div></div>
+
+<div id="end" class="screen"><div class="panel">
+  <h2 data-s="sunrise"></h2>
+  <div id="finalGlow"></div>
+  <p id="tonight" class="sub"></p>
+  <div class="row">
+    <button id="againBtn" class="btn big"><svg class="ico" viewBox="0 0 24 24" data-i="again"></svg><span data-s="playAgain"></span></button>
+    <button id="menuBtn" class="btn ghost"><svg class="ico" viewBox="0 0 24 24" data-i="home"></svg><span data-s="menu"></span></button>
+  </div>
+  <div id="awards"></div>
+  <p id="crewNote" class="sub" data-s="crewNote"></p>
+  <div id="board"></div>
+  <canvas id="postcard" width="720" height="900"></canvas>
+  <button id="saveBtn" class="btn ghost"><svg class="ico" viewBox="0 0 24 24" data-i="card"></svg><span data-s="savePostcard"></span></button>
+  <div class="earnbox">
+    <button id="bannerBtn" class="btn ghost"><svg class="ico" viewBox="0 0 24 24" data-i="banner"></svg><span data-s="hangBanner"></span></button>
+    <span id="bannerMsg"></span>
+  </div>
+</div></div>
+
+<div id="pause" class="screen"><div class="panel">
+  <h2 data-s="paused"></h2>
+  <button id="resumeBtn" class="btn big"><svg class="ico" viewBox="0 0 24 24" data-i="spark"></svg><span data-s="resume"></span></button>
+  <div class="row">
+    <button id="pauseSoundBtn" class="btn ghost"><svg class="ico" viewBox="0 0 24 24" data-i="sound"></svg><span id="pauseSoundTxt"></span></button>
+    <button id="quitBtn" class="btn ghost"><svg class="ico" viewBox="0 0 24 24" data-i="home"></svg><span data-s="menu"></span></button>
+  </div>
+  <p class="sub" style="font-size:13px" data-s="hintPause"></p>
+</div></div>
+
+<div id="custom" class="screen"><div class="panel">
+  <h2 data-s="customTitle"></h2>
+  <div class="prevbox"><canvas id="prevLantern" width="300" height="330" role="img" aria-label="Lantern preview"></canvas></div>
+  <div class="sec" data-s="pattern"></div><div id="patRow" class="chips"></div>
+  <div class="sec" data-s="colour"></div><div id="colRow" class="chips"></div>
+  <div class="sec" data-s="skyline"></div><div id="skyRow" class="chips"></div>
+  <div class="sec" data-s="wantedSet"></div><div id="setRow" class="chips"></div>
+  <p id="setInfo" class="sub" style="font-size:14px"></p>
+  <button id="doneBtn" class="btn big"><svg class="ico" viewBox="0 0 24 24" data-i="home"></svg><span data-s="done"></span></button>
+</div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ====================================================================
+   Lantern Drift v1 — one file. Layers (so v2 can swap the bots for a network):
+   STR/CFG/SHAPES  data
+   Sim             authoritative game rules (no DOM, no drawing)
+   Drivers         turn a source of intent into inputs[playerId] = {ax,ay,pulse,dim}
+                   BotDriver (v1, simulated players), HumanDriver (local player).
+                   A NetDriver in v2 fills inputs for remote players with the same contract.
+   Renderer / UI   canvas drawing, DOM screens
+   ==================================================================== */
+
+/* ---------- strings: all player-facing words live here ---------- */
+const STR = {
+  title: 'Lantern Drift', tagline: 'Link lanterns. Draw the stars.',
+  play: 'Play', customise: 'Lanterns', customTitle: 'Make it yours', pattern: 'Pattern', colour: 'Colour', skyline: 'Night city', wantedSet: 'Wanted shapes', done: 'Done',
+  surprise: 'Surprise me', rotate: 'Rotate nightly', paused: 'Paused', resume: 'Resume', soundOn: 'Sound: on', soundOff: 'Sound: off', pauseBtn: 'Pause', muteBtn: 'Mute',
+  hintPause: 'P or the pause button pauses. Your round waits for you.', tonight: 'Tonight', setWord: 'Set',
+  howLink: 'Drift close to link', howPulse: 'Pulse calls', howDim: 'Dim holds a link',
+  hintKeys: 'Drag or arrows / WASD to drift. Space = pulse. E or Shift = dim. P = pause.',
+  hintMove: 'Drag to drift', menu: 'Menu', goalLink: 'Drift close to a lantern', goalAdd: 'Add one more lantern', goalFit: 'Shape it like the card', goalHold: 'Hold still...', goalBig: 'Too many - a thread will let go', goalTime: 'Reach the dawn with the most Glow', glow: 'Glow', pulse: 'Pulse', dim: 'Dim',
+  dawn: 'Dawn! Wanted shapes pay double', sunrise: 'Sunrise',
+  bestConstellation: 'Best constellation', bestAssist: 'Best assist', mostSparks: 'Most sparks',
+  you: 'You', playAgain: 'Play again', savePostcard: 'Save postcard',
+  hangBanner: 'Hang your best constellation',
+  bannerHung: 'Banner hung. It will fly beneath your lantern.', noShape: 'Finish a constellation to hang one.',
+  saveFail: 'Could not save the picture here.',
+  loading: 'Lighting the lanterns...', loadFail: 'Something went wrong. Please reload the page.',
+  adWait: 'Watch a short video to hang your banner.', adFail: 'No video is available right now. Try again later.', setNext: 'Your chosen shapes come in round two.',
+  canvasLabel: 'Lantern Drift play area. Use the buttons for pause, sound, pulse and dim. Shapes you lock are announced here.',
+  aLock: 'Shape locked: ', aDawn: 'Dawn. Wanted shapes pay double.', aWanted: 'Wanted: ', aPlaying: 'Round started. ', aPaused: 'Paused.',
+  none: '-', rank: 'Your rank in the practice crew', crewNote: 'Your practice crew is made of computer lanterns.', nudge: 'Tip: Pulse calls nearby lanterns, Dim holds a link', postcardTitle: 'My sky',
+  shapes: { pair: 'Pair', line: 'Bridge', tri: 'Triangle', spoke: 'Spoke', square: 'Square', vee: 'Corner', zig: 'Zigzag', ell: 'Hook', comet: 'Comet' },
+  patterns: ['Plain', 'Stripes', 'Dots', 'Stars', 'Waves', 'Diamonds'],
+  colours: ['Gold', 'Mint', 'Plum', 'Coral', 'Sky', 'Rose', 'Lilac', 'Lime', 'Teal', 'Peach', 'Cloud', 'Amber']
+};
+const BOT_NAMES = ['Wick', 'Pip', 'Moth', 'Ember', 'Fig', 'Dusk', 'Nim', 'Lark', 'Tam', 'Juno', 'Oat'];
+
+/* ---------- config ---------- */
+const CFG = {
+  worldW: 1000, worldH: 1500, duration: 180, dawnAt: 150, players: 12,
+  lanternR: 22, touchDist: 56, linkMax: 320, linkLife: 18, maxDeg: 3,
+  settle: 0.8, settleDecay: 0.4, tol: 0.3, sMin: 30, sMax: 260,
+  accel: 420, maxSpeed: 170, pulseCd: 6, pulseRange: 420, dimDur: 6, dimCd: 9,
+  ember: 3, pairCd: 6, sparkCount: 30, sparkR: 30, wantedSlots: 3, ground: 150, step: 1 / 60
+};
+
+/* Wanted shapes. pts are relative; edges are the threads that must exist. Matching is
+   by pair distances up to scale, so rotation, mirroring and size are free and tracing may be loose. */
+const SHAPES = {
+  pair:   { n: 2, pts: [[0, 0], [1, 0]], edges: [[0, 1]], value: 4, w: 18 },
+  line:   { n: 3, pts: [[0, 0], [1, 0], [2, 0]], edges: [[0, 1], [1, 2]], value: 8, w: 20 },
+  tri:    { n: 3, pts: [[0, 0], [1, 0], [.5, .866]], edges: [[0, 1], [1, 2], [2, 0]], value: 10, w: 20 },
+  spoke:  { n: 4, pts: [[0, 0], [1, 0], [-.5, .866], [-.5, -.866]], edges: [[0, 1], [0, 2], [0, 3]], value: 16, w: 24 },
+  square: { n: 4, pts: [[0, 0], [1, 0], [1, 1], [0, 1]], edges: [[0, 1], [1, 2], [2, 3], [3, 0]], value: 18, w: 26 },
+  vee:    { n: 3, pts: [[0, 0], [1, 0], [1, 1]], edges: [[0, 1], [1, 2]], value: 8, w: 18, tol: .14 },   // tighter, so a straight bridge is not also a corner
+  zig:    { n: 4, pts: [[0, 0], [1, 0], [1, 1], [2, 1]], edges: [[0, 1], [1, 2], [2, 3]], value: 14, w: 22, bend: 'zig' },
+  ell:    { n: 4, pts: [[0, 0], [0, 1], [0, 2], [1, 2]], edges: [[0, 1], [1, 2], [2, 3]], value: 14, w: 22, bend: 'ell' },
+  comet:  { n: 4, pts: [[0, 0], [1, 0], [.5, .866], [-.9, -.4]], edges: [[0, 1], [1, 2], [2, 0], [0, 3]], value: 20, w: 24 }
+};
+/* Eight wanted-shape sets. Each night uses one: the three cards you start with are 2-3 lantern shapes (start),
+   later cards are drawn from start + more. The guided first round always uses its own starters. */
+const SETS = [
+  { name: 'First Lights',  start: ['pair', 'line', 'tri'],   more: ['spoke', 'square'] },
+  { name: 'Little Bridges', start: ['line', 'vee', 'pair'],  more: ['zig', 'ell'] },
+  { name: 'Quiet Corners', start: ['vee', 'tri', 'pair'],    more: ['square', 'comet'] },
+  { name: 'Comet Night',   start: ['tri', 'pair', 'vee'],    more: ['comet', 'spoke'] },
+  { name: 'Garden Paths',  start: ['line', 'tri', 'vee'],    more: ['zig', 'ell', 'square'] },
+  { name: 'Festival',      start: ['pair', 'tri', 'line'],   more: ['spoke', 'square', 'zig'] },
+  { name: 'Whisper Walk',  start: ['vee', 'line', 'pair'],   more: ['ell', 'comet'] },
+  { name: 'Grand Lantern', start: ['tri', 'line', 'vee'],    more: ['spoke', 'square', 'zig', 'ell', 'comet'] }
+];
+const GUIDED_START = ['line', 'tri', 'spoke'];   // the guided pocket is you + 3 friends, so a 4-lantern card keeps a full pocket a valid shape
+const PALETTE = ['#ffd166', '#7fe3c0', '#b06ab3', '#ffb3a0', '#8fb8ff', '#ff8fb0', '#c3a6ff', '#c8e88a', '#5fd0d8', '#ff9272', '#f4e9ff', '#ff9f43'];
+
+(function prepShapes() {
+  for (const k in SHAPES) {
+    const s = SHAPES[k], n = s.n;
+    s.adj = Array.from({ length: n }, () => Array(n).fill(0));
+    s.dist = Array.from({ length: n }, () => Array(n).fill(0));
+    for (const [a, b] of s.edges) s.adj[a][b] = s.adj[b][a] = 1;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) s.dist[i][j] = Math.hypot(s.pts[i][0] - s.pts[j][0], s.pts[i][1] - s.pts[j][1]);
+  }
+})();
+const PERMS = {};
+function perms(n) {
+  if (PERMS[n]) return PERMS[n];
+  const out = [], a = [...Array(n).keys()];
+  (function rec(k) { if (k === n) { out.push(a.slice()); return; } for (let i = k; i < n; i++) { [a[k], a[i]] = [a[i], a[k]]; rec(k + 1); [a[k], a[i]] = [a[i], a[k]]; } })(0);
+  return PERMS[n] = out;
+}
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* Bend check for the two 4-lantern paths, so a Hook is never a Zigzag: with the turn sines c1, c2 at the two inner lanterns,
+   Zigzag turns both ways by a clear angle (c1*c2 < 0, both > .5); Hook goes nearly straight at one inner lantern and bends at the other. */
+function bendOk(kind, o) {
+  const cr = (a, b, c) => { const ux = b.x - a.x, uy = b.y - a.y, vx = c.x - b.x, vy = c.y - b.y; return (ux * vy - uy * vx) / ((Math.hypot(ux, uy) * Math.hypot(vx, vy)) || 1); };
+  const c1 = cr(o[0], o[1], o[2]), c2 = cr(o[1], o[2], o[3]), a1 = Math.abs(c1), a2 = Math.abs(c2);
+  return kind === 'zig' ? c1 * c2 < 0 && a1 > .5 && a2 > .5 : Math.min(a1, a2) < .5 && Math.max(a1, a2) > .5;
+}
+
+/* Best isomorphic fit of a linked group onto a shape: returns {shape, err, s, perm, ok} or null. */
+function matchShape(key, nodes, edges) {
+  const sh = SHAPES[key], n = nodes.length;
+  if (n !== sh.n || edges.length !== sh.edges.length) return null;
+  const idx = new Map(nodes.map((p, i) => [p.id, i]));
+  const A = Array.from({ length: n }, () => Array(n).fill(0));
+  for (const e of edges) { const i = idx.get(e.a), j = idx.get(e.b); A[i][j] = A[j][i] = 1; }
+  const D = nodes.map(p => nodes.map(q => Math.hypot(p.x - q.x, p.y - q.y)));
+  let best = null;
+  outer: for (const pm of perms(n)) {
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (A[i][j] !== sh.adj[pm[i]][pm[j]]) continue outer;
+    if (sh.bend) { const o = []; for (let i = 0; i < n; i++) o[pm[i]] = nodes[i]; if (!bendOk(sh.bend, o)) continue; }
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const t = sh.dist[pm[i]][pm[j]]; num += D[i][j] * t; den += t * t; }
+    const s = num / den; if (!(s > 0)) continue;
+    let err = 0, c = 0;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const t = sh.dist[pm[i]][pm[j]] * s; err += Math.abs(D[i][j] - t) / t; c++; }
+    err /= c;
+    if (!best || err < best.err) best = { shape: key, err, s, perm: pm.slice(), idx };
+  }
+  if (best) best.ok = best.err < (sh.tol || CFG.tol) && best.s >= CFG.sMin && best.s <= CFG.sMax;
+  return best;
+}
+
+/* ====================================================================
+   Sim
+   ==================================================================== */
+class Sim {
+  constructor(seed, humanId, opts) {
+    this.rng = mulberry32(seed); this.humanId = humanId == null ? -1 : humanId;
+    this.guided = !!(opts && opts.guided); this.duration = this.guided ? 90 : CFG.duration; this.dawnAt = this.guided ? 70 : CFG.dawnAt; this.linkLife = this.guided ? 40 : CFG.linkLife;
+    this.setNo = opts && opts.set != null ? opts.set % SETS.length : 0; this.set = SETS[this.setNo]; this.pool = this.set.start.concat(this.set.more);
+    this.dt = CFG.step;
+    this.inviteUntil = this.humanId >= 0 ? (this.guided ? 1e9 : 30) : 0;   // first-round bots invite the player
+    this.t = 0; this.over = false; this.dawn = false;
+    this.players = []; this.sparks = []; this.gusts = []; this.links = []; this.locked = [];
+    this.wanted = []; this.events = []; this.pulseLog = []; this.settle = {}; this.comps = []; this.compOf = {}; this.cool = {};
+    for (let i = 0; i < CFG.players; i++) this.players.push(this.makePlayer(i));
+    for (let i = 0; i < CFG.sparkCount; i++) this.sparks.push(this.newSpark());
+    for (let i = 0; i < 5; i++) this.gusts.push({ x: this.r(100, CFG.worldW - 100), y: this.r(150, CFG.worldH - 300), r: this.r(150, 230), a: this.r(0, 6.28), s: this.r(110, 170), vx: this.r(-14, 14), vy: this.r(-14, 14), spin: this.r(-.25, .25) });
+    for (const shape of this.set.start.slice(0, CFG.wantedSlots)) { this.wanted.push({ shape }); this.rng(); }
+    this.helperIds = this.humanId >= 0 ? this.players.filter(p => p.id !== this.humanId).slice(0, 3).map(p => p.id) : [];
+    if (this.guided) { this.wanted = GUIDED_START.map(shape => ({ shape })); this.placeGuided(); }
+  }
+  /* guided first round: you in the middle, three friendly lanterns near, the rest far away */
+  placeGuided() {
+    const me = this.players[this.humanId]; me.x = CFG.worldW / 2; me.y = 800; me.vx = me.vy = 0;
+    const help = this.players.filter(p => p.id !== this.humanId).slice(0, 3), far = this.players.filter(p => p.id !== this.humanId).slice(3);
+    help.forEach((p, i) => { const a = [1.2, 3.9, 5.5][i]; p.x = me.x + Math.cos(a) * 250; p.y = me.y + Math.sin(a) * 250; });
+    for (const p of far) while (Math.hypot(p.x - me.x, p.y - me.y) < 480) { p.x = this.r(80, CFG.worldW - 80); p.y = this.r(120, CFG.worldH - CFG.ground - 40); }
+  }
+  r(a, b) { return a + (b - a) * this.rng(); }
+  makePlayer(i) {
+    return { id: i, name: i === this.humanId ? STR.you : BOT_NAMES[(i - 1 + BOT_NAMES.length) % BOT_NAMES.length], isYou: i === this.humanId,
+      x: this.r(80, CFG.worldW - 80), y: this.r(120, CFG.worldH - CFG.ground - 40), vx: 0, vy: 0, tint: PALETTE[i % PALETTE.length], pat: i === this.humanId ? 0 : (i * 5) % 7 % 6,
+      speedMul: i === this.humanId ? 1 : this.r(.78, .95), glow: 0, sparks: 0, assists: 0, shapes: 0, bestVal: 0, bestShape: null,
+      pulseCd: 0, dimCd: 0, dimT: 0, ember: 0, pulseT: 0, face: this.r(0, 1) };
+  }
+  newSpark() { return { x: this.r(40, CFG.worldW - 40), y: this.r(60, CFG.worldH - CFG.ground - 20), ph: this.r(0, 6.28) }; }
+  pickShape() {
+    const taken = new Set(this.wanted.map(w => w.shape)), keys = this.pool.filter(k => !taken.has(k));
+    let tot = 0; for (const k of keys) tot += SHAPES[k].w;
+    let x = this.rng() * tot; for (const k of keys) { x -= SHAPES[k].w; if (x <= 0) return k; }
+    return keys[0];
+  }
+  findLink(a, b) { for (const l of this.links) if ((l.a === a && l.b === b) || (l.a === b && l.b === a)) return l; return null; }
+  deg(id) { let d = 0; for (const l of this.links) if (l.a === id || l.b === id) d++; return d; }
+  /* guided round: you and the three friendly lanterns form a quiet pocket; the other lanterns stay out of it */
+  quarantined() { return this.guided && this.t < this.inviteUntil; }
+  circle(id) { return id === this.humanId || this.helperIds.includes(id) ? 1 : 0; }
+  mult() { return this.dawn ? 2 : 1; }
+
+  step(dt, inputs) {
+    if (this.over) return;
+    this.t += dt; this.dt = dt;
+    if (!this.dawn && this.t >= this.dawnAt) { this.dawn = true; this.events.push({ type: 'dawn' }); }
+    if (this.t >= this.duration) { this.over = true; this.events.push({ type: 'end' }); return; }
+    for (const g of this.gusts) {
+      g.x += g.vx * dt; g.y += g.vy * dt; g.a += g.spin * dt;
+      if (g.x < 50 || g.x > CFG.worldW - 50) g.vx = -g.vx;
+      if (g.y < 100 || g.y > CFG.worldH - 250) g.vy = -g.vy;
+    }
+    for (const p of this.players) {
+      const inp = inputs[p.id] || { ax: 0, ay: 0 };
+      p.pulseCd = Math.max(0, p.pulseCd - dt); p.dimCd = Math.max(0, p.dimCd - dt); p.dimT = Math.max(0, p.dimT - dt);
+      p.ember = Math.max(0, p.ember - dt); p.pulseT = Math.max(0, p.pulseT - dt);
+      if (inp.pulse && p.pulseCd <= 0) {
+        p.pulseCd = CFG.pulseCd; p.pulseT = 1;
+        this.pulseLog.push({ t: this.t, x: p.x, y: p.y, id: p.id }); if (this.pulseLog.length > 12) this.pulseLog.shift();
+        this.events.push({ type: 'pulse', x: p.x, y: p.y, id: p.id });
+      }
+      if (inp.dim && p.dimT <= 0 && p.dimCd <= 0) { p.dimT = CFG.dimDur; p.dimCd = CFG.dimCd; }
+      const dimmed = p.dimT > 0;
+      let ax = dimmed ? 0 : inp.ax * CFG.accel * p.speedMul, ay = dimmed ? 0 : inp.ay * CFG.accel * p.speedMul;
+      for (const g of this.gusts) {
+        const dx = p.x - g.x, dy = p.y - g.y, d = Math.hypot(dx, dy);
+        if (d < g.r) { const f = 1 - d / g.r; ax += Math.cos(g.a) * g.s * f * 2; ay += Math.sin(g.a) * g.s * f * 2; }
+      }
+      p.vx += ax * dt; p.vy += ay * dt;
+      const k = Math.exp(-(dimmed ? 3.5 : 1.3) * dt); p.vx *= k; p.vy *= k;
+      const sp = Math.hypot(p.vx, p.vy), mx = CFG.maxSpeed * (dimmed ? .5 : 1) * 1.15;
+      if (sp > mx) { p.vx *= mx / sp; p.vy *= mx / sp; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      const yMax = CFG.worldH - CFG.ground;
+      if (p.x < 30) { p.x = 30; p.vx = Math.abs(p.vx) * .4; } if (p.x > CFG.worldW - 30) { p.x = CFG.worldW - 30; p.vx = -Math.abs(p.vx) * .4; }
+      if (p.y < 40) { p.y = 40; p.vy = Math.abs(p.vy) * .4; } if (p.y > yMax) { p.y = yMax; p.vy = -Math.abs(p.vy) * .4; }
+      for (let i = 0; i < this.sparks.length; i++) {
+        const s = this.sparks[i];
+        if ((s.x - p.x) ** 2 + (s.y - p.y) ** 2 < CFG.sparkR ** 2) {
+          p.glow += 1; p.sparks += 1; this.events.push({ type: 'spark', x: s.x, y: s.y, id: p.id }); this.sparks[i] = this.newSpark();
+        }
+      }
+    }
+    this.stepLinks(dt);
+    this.stepShapes();
+  }
+
+  stepLinks(dt) {
+    const P = this.players, T2 = CFG.touchDist ** 2;
+    for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) {
+      const a = P[i], b = P[j], dx = b.x - a.x, dy = b.y - a.y;
+      if (dx * dx + dy * dy > T2 || a.ember > 0 || b.ember > 0) continue;
+      if (this.quarantined() && this.circle(a.id) !== this.circle(b.id)) continue;
+      const key = a.id + '-' + b.id, ex = this.findLink(a.id, b.id);
+      if (ex) { ex.exp = this.t + this.linkLife; continue; }
+      if ((this.cool[key] || 0) > this.t || this.deg(a.id) >= CFG.maxDeg || this.deg(b.id) >= CFG.maxDeg) continue;
+      const d = Math.hypot(dx, dy) || 1, ra = (a.vx * dx + a.vy * dy) / d, rb = -(b.vx * dx + b.vy * dy) / d;
+      this.links.push({ a: a.id, b: b.id, born: this.t, exp: this.t + this.linkLife, by: ra >= rb ? a.id : b.id });
+      this.events.push({ type: 'link', x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, a: a.id, b: b.id });
+    }
+    this.links = this.links.filter(l => {
+      const a = this.players[l.a], b = this.players[l.b];
+      if (a.dimT > 0 || b.dimT > 0) l.exp = Math.max(l.exp, this.t + 1);
+      return Math.hypot(a.x - b.x, a.y - b.y) <= CFG.linkMax && this.t < l.exp;
+    });
+  }
+
+  buildComps() {
+    const par = this.players.map((_, i) => i), find = x => par[x] === x ? x : (par[x] = find(par[x]));
+    for (const l of this.links) par[find(l.a)] = find(l.b);
+    const groups = {};
+    for (const p of this.players) { const r = find(p.id); (groups[r] = groups[r] || { ids: [], nodes: [], edges: [] }).nodes.push(p); groups[r].ids.push(p.id); }
+    for (const l of this.links) groups[find(l.a)].edges.push(l);
+    this.comps = []; this.compOf = {};
+    for (const g of Object.values(groups)) if (g.nodes.length >= 2) {
+      g.key = g.ids.join(',') + '|' + g.edges.map(e => e.a + '-' + e.b).sort().join(',');
+      this.comps.push(g); for (const id of g.ids) this.compOf[id] = g;
+    }
+  }
+
+  stepShapes() {
+    this.buildComps();
+    const seen = new Set(), ready = [];
+    for (const c of this.comps) {
+      c.m = null; c.progress = 0;
+      if (c.nodes.length > 4) continue;
+      for (const w of this.wanted) {
+        const m = matchShape(w.shape, c.nodes, c.edges);
+        if (!m) continue;
+        const A = SHAPES[m.shape], B = c.m && SHAPES[c.m.shape], sameGraph = B && A.n === B.n && A.edges.length === B.edges.length;
+        // two wanted shapes with the same threads (Bridge/Corner, Zigzag/Hook): the one your group is closer to wins
+        if (!c.m || (m.ok && (!c.m.ok || (sameGraph ? m.err < c.m.err : A.value > B.value))) || (!m.ok && !c.m.ok && m.err < c.m.err)) c.m = m;
+      }
+      if (c.m && c.m.ok) {
+        seen.add(c.key); const st = this.settle[c.key] || (this.settle[c.key] = { p: 0 });
+        st.p = Math.min(1, st.p + this.dt / CFG.settle); c.progress = st.p;
+        if (st.p >= 1) ready.push(c);
+      }
+    }
+    /* a group that drifts out of shape loses its settle progress gradually, so one wobble does not undo a good hold */
+    for (const k of Object.keys(this.settle)) if (!seen.has(k)) {
+      const st = this.settle[k]; st.p -= this.dt / CFG.settle * CFG.settleDecay;
+      if (st.p <= 0) delete this.settle[k];
+      else for (const c of this.comps) if (c.key === k) c.progress = st.p;
+    }
+    this.unhook();
+    for (const c of ready) if (this.wanted.some(w => w.shape === c.m.shape)) this.lock(c);
+  }
+
+  /* if your group stays a shape nobody wants, the newest thread lets go so you can try again.
+     Guided round: after 2.5 s for any group of 3+. Normal rounds: after 5 s, and only when the group cannot grow into
+     a wanted shape (4+ lanterns, or 3 lanterns while no wanted shape has 4). */
+  unhook() {
+    const c = this.humanId >= 0 ? this.compOf[this.humanId] : null;
+    const stuck = c && !c.m && c.nodes.length >= 3 && (this.guided || c.nodes.length >= 4 || !this.wanted.some(w => SHAPES[w.shape].n === 4));
+    if (!stuck) { this.badSince = null; return; }
+    if (this.badSince == null) this.badSince = this.t;
+    if (this.t - this.badSince < (this.guided ? 2.5 : 5)) return;
+    /* newest thread of the whole stuck group (other players' threads can be the cause). A thread of yours wins when it is within 3 s of the newest. */
+    let n = null, mine = null; for (const l of c.edges) { if (!n || l.born > n.born) n = l; if ((l.a === this.humanId || l.b === this.humanId) && (!mine || l.born > mine.born)) mine = l; }
+    if (mine && (this.guided || mine.born >= n.born - 3)) n = mine;   // the guided pocket keeps the v4 rule: your own newest thread
+    if (n) { this.links = this.links.filter(l => l !== n); this.cool[n.a + '-' + n.b] = this.t + 2; }
+    this.badSince = null;
+  }
+  lock(c) {
+    const m = c.m, sh = SHAPES[m.shape], val = sh.value * this.mult();
+    let newest = c.edges[0]; for (const e of c.edges) if (e.born > newest.born) newest = e;
+    for (const p of c.nodes) {
+      p.glow += val; p.shapes++; if (p.id !== newest.by) p.assists++;
+      if (val > p.bestVal) { p.bestVal = val; p.bestShape = m.shape; }
+      p.ember = CFG.ember;
+    }
+    const rec = { shape: m.shape, value: val, n: sh.n, t: this.t, double: this.dawn, members: c.nodes.map(p => p.id),
+      pts: c.nodes.map(p => [p.x, p.y]), edges: c.edges.map(e => [c.nodes.indexOf(this.players[e.a]), c.nodes.indexOf(this.players[e.b])]) };
+    this.locked.push(rec);
+    for (const e of c.edges) this.cool[e.a + '-' + e.b] = this.t + CFG.pairCd;
+    this.links = this.links.filter(l => !c.edges.includes(l));
+    const slot = this.wanted.find(w => w.shape === m.shape);
+    this.wanted = this.wanted.filter(w => w !== slot); slot.shape = this.pickShape(); this.wanted.push(slot);
+    this.events.push({ type: 'lock', rec });
+  }
+}
+
+function computeAwards(sim) {
+  const ps = sim.players.slice().sort((a, b) => b.glow - a.glow);
+  let best = null;
+  for (const r of sim.locked) if (!best || r.value > best.value || (r.value === best.value && r.n > best.n)) best = r;
+  const top = (key) => { let w = null; for (const p of sim.players) if (p[key] > 0 && (!w || p[key] > w[key] || (p[key] === w[key] && p.glow > w.glow))) w = p; return w; };
+  return { ps, best, assist: top('assists'), sparks: top('sparks') };
+}
+
+/* ====================================================================
+   Drivers
+   ==================================================================== */
+class BotDriver {
+  constructor() { this.b = {}; this.seen = -1; }
+  collect(sim, dt, inputs) {
+    const pulses = sim.pulseLog.filter(p => p.t > this.seen);
+    if (pulses.length) this.seen = Math.max(...pulses.map(p => p.t));
+    const P = sim.players, t = sim.t, rnd = () => sim.rng();
+    const inv = sim.humanId >= 0 && t < sim.inviteUntil, hp = inv ? P[sim.humanId] : null;
+    const helpers = inv ? sim.helperIds : [];
+    for (const p of P) {
+      if (p.id === sim.humanId) continue;
+      p.inviting = false;
+      if (hp && sim.quarantined() && !helpers.includes(p.id)) {   // keep clear of the guided pocket
+        const fx = p.x - hp.x, fy = p.y - hp.y, fd = Math.hypot(fx, fy) || 1;
+        if (fd < 420) { const ex = fx / fd, ey = fy / fd; inputs[p.id] = { ax: ex, ay: ey, pulse: false, dim: false }; continue; }
+      }
+      const b = this.b[p.id] || (this.b[p.id] = { mode: 'wander', until: 0, tx: p.x, ty: p.y, target: -1, nextPulse: t + 4 + rnd() * 12 });
+      const comp = sim.compOf[p.id];
+      let ax = 0, ay = 0, pulse = false, dim = false, forced = false;
+      for (const pl of pulses) {
+        if (pl.id === p.id || b.mode === 'form') continue;
+        if (Math.hypot(pl.x - p.x, pl.y - p.y) < CFG.pulseRange && rnd() < .65) { b.mode = 'follow'; b.target = pl.id; b.until = t + 4; }
+      }
+      if (comp && comp.m) {
+        if (comp.m.ok) { forced = true; }                       // hold still while the shape settles
+        else {                                                  // right threads, loose geometry: relax into the shape
+          const s0 = clamp(comp.m.s, 110, 200), sh = SHAPES[comp.m.shape], i = comp.m.idx.get(p.id);
+          for (let j = 0; j < comp.nodes.length; j++) if (j !== i) {
+            const q = comp.nodes[j], dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || 1;
+            const want = s0 * sh.dist[comp.m.perm[i]][comp.m.perm[j]], k = (d - want) / s0;
+            ax += dx / d * k; ay += dy / d * k;
+          }
+          b.mode = 'form'; b.until = t + .5; forced = true;
+        }
+      }
+      const hi = helpers.indexOf(p.id);
+      if (!forced && hi >= 0 && p.ember <= 0) {                // invite: hover near the player, wait to be touched
+        forced = true; p.inviting = !sim.findLink(p.id, hp.id);
+        let an = b.anchor;
+        if (!an || Math.hypot(an.x - hp.x, an.y - hp.y) > 300) { const ang = hi * 2.1 + 1.2 + (rnd() - .5) * .6; an = b.anchor = { x: clamp(hp.x + Math.cos(ang) * 170, 60, CFG.worldW - 60), y: clamp(hp.y + Math.sin(ang) * 170, 80, CFG.worldH - CFG.ground - 20) }; }
+        const dx = an.x - p.x, dy = an.y - p.y, d = Math.hypot(dx, dy);
+        if (d > 14) { const mag = clamp(d / 70, 0, 1); ax = dx / d * mag; ay = dy / d * mag; }
+      }
+      if (!forced) {
+        if (b.mode === 'form') b.until = 0;
+        // path of n lantern with a wanted cycle of the same size: the two ends reach for each other
+        const closer = comp && !comp.m && this.closeTarget(sim, comp, p);
+        if (closer != null) { b.mode = 'follow'; b.target = closer; b.until = t + 1; }
+        else if (t > b.until) this.pick(sim, p, b, comp);
+        let tx = b.tx, ty = b.ty;
+        if (b.mode === 'spark') { let bd = 1e9; for (const s of sim.sparks) { const d = (s.x - p.x) ** 2 + (s.y - p.y) ** 2; if (d < bd) { bd = d; tx = s.x; ty = s.y; } } }
+        else if (b.mode === 'follow' || b.mode === 'friend') {
+          const o = P[b.target]; if (!o) b.until = 0; else { tx = o.x; ty = o.y; if (sim.findLink(p.id, o.id)) b.until = 0; }
+        }
+        const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
+        if (d > 18) { ax = dx / d; ay = dy / d; const w = Math.sin(t * 1.3 + p.id * 2) * .3; ax += -dy / d * w; ay += dx / d * w; }
+        else if (b.mode === 'wander') b.until = 0;
+        if (comp && !comp.m && p.dimCd <= 0 && comp.nodes.length >= 2 && rnd() < .02 * dt * 60 / 10) dim = true;
+        if (t > b.nextPulse && !comp) { pulse = true; b.nextPulse = t + 10 + rnd() * 14; }
+      }
+      const m = Math.hypot(ax, ay); if (m > 1) { ax /= m; ay /= m; }
+      inputs[p.id] = { ax, ay, pulse, dim };
+    }
+  }
+  closeTarget(sim, comp, p) {
+    const n = comp.nodes.length; if (n < 3 || comp.edges.length !== n - 1) return null;
+    if (!sim.wanted.some(w => SHAPES[w.shape].n === n && SHAPES[w.shape].edges.length === n)) return null;
+    const ends = comp.nodes.filter(q => sim.deg(q.id) === 1);
+    if (ends.length !== 2 || sim.deg(p.id) !== 1) return null;
+    return ends[0].id === p.id ? ends[1].id : ends[0].id;
+  }
+  pick(sim, p, b, comp) {
+    const t = sim.t, rnd = () => sim.rng(), P = sim.players;
+    const others = P.filter(o => o.id !== p.id && o.ember <= 0 && sim.deg(o.id) < CFG.maxDeg && !sim.findLink(p.id, o.id) && !(comp && comp.ids.includes(o.id)));
+    others.sort((a, c) => ((a.x - p.x) ** 2 + (a.y - p.y) ** 2) - ((c.x - p.x) ** 2 + (c.y - p.y) ** 2));
+    const x = rnd();
+    if (comp && comp.nodes.length < 4 && x < .7 && others.length) { b.mode = 'friend'; b.target = others[Math.floor(rnd() * Math.min(3, others.length))].id; }
+    else if (x < .4) b.mode = 'spark';
+    else if (x < .85 && others.length) { b.mode = 'friend'; b.target = others[Math.floor(rnd() * Math.min(4, others.length))].id; }
+    else { b.mode = 'wander'; b.tx = 60 + rnd() * (CFG.worldW - 120); b.ty = 100 + rnd() * (CFG.worldH - CFG.ground - 160); }
+    b.until = t + 2 + rnd() * 2.5;
+  }
+}
+
+class HumanDriver {
+  constructor(view) { this.view = view; this.keys = new Set(); this.steer = null; this.pulse = false; this.dim = false; }
+  collect(sim, dt, inputs) {
+    const p = sim.players[sim.humanId]; if (!p) return;
+    let ax = 0, ay = 0; const k = this.keys;
+    if (k.has('ArrowLeft') || k.has('KeyA')) ax -= 1; if (k.has('ArrowRight') || k.has('KeyD')) ax += 1;
+    if (k.has('ArrowUp') || k.has('KeyW')) ay -= 1; if (k.has('ArrowDown') || k.has('KeyS')) ay += 1;
+    const m = Math.hypot(ax, ay); if (m > 1) { ax /= m; ay /= m; }
+    if (this.steer) {
+      const w = this.view.toWorld(this.steer.x, this.steer.y), dx = w.x - p.x, dy = w.y - p.y, d = Math.hypot(dx, dy);
+      if (d > 6) { const mag = clamp(d / 60, 0, 1); ax = dx / d * mag; ay = dy / d * mag; }
+    }
+    inputs[p.id] = { ax, ay, pulse: this.pulse, dim: this.dim }; this.pulse = this.dim = false;
+  }
+}
+
+/* First-session guide, one step at a time: 0 drift, 1 touch a lantern, 2 finish the wanted shape, 3 done.
+   Wordless: the renderer shows a pulsing hand on target(). Steps are latched, so they never go back. */
+class Tutorial {
+  constructor(sim) { const h = sim.players[sim.humanId]; this.step = 0; this.moved = 0; this.lx = h.x; this.ly = h.y; this.at = 0; this.shape = sim.wanted[0].shape; }   // shape = the card step 2 points at
+  update(sim, steering) {
+    const h = sim.players[sim.humanId]; if (!h || this.step >= 3) return;
+    if (steering) this.moved += Math.hypot(h.x - this.lx, h.y - this.ly);
+    this.lx = h.x; this.ly = h.y;
+    if (sim.links.some(l => l.a === h.id || l.b === h.id)) this.didLink = true;
+    if (sim.locked.some(r => r.members.includes(h.id))) this.didLock = true;
+    if (this.moved >= 40) this.didMove = true;
+    if (sim.t - this.at < .7) return;                       // every hand stays up long enough to be seen
+    const done = this.step === 0 ? this.didMove || this.didLink || this.didLock : this.step === 1 ? this.didLink || this.didLock : this.didLock;
+    if (done) { this.step++; this.at = sim.t; }
+  }
+  /* world point the hand should show, or null */
+  target(sim) {
+    const h = sim.players[sim.humanId]; if (!h || this.step >= 3) return null;
+    if (this.step === 0) return { x: h.x, y: h.y, you: true };
+    const comp = sim.compOf[h.id], helpers = sim.helperIds;
+    if (comp && (comp.m || comp.nodes.length >= 4)) return null;   // the group already has a shape to settle: no hand, just wait
+    let best = null, bs = 1e9;
+    for (const q of sim.players) {
+      if (q.id === h.id || q.ember > 0 || sim.deg(q.id) >= CFG.maxDeg || (comp && comp.ids.includes(q.id))) continue;
+      const s = Math.hypot(q.x - h.x, q.y - h.y) - (helpers.includes(q.id) ? 200 : 0);
+      if (s < bs) { bs = s; best = q; }
+    }
+    return best ? { x: best.x, y: best.y, id: best.id } : null;
+  }
+}
+
+/* ====================================================================
+   Sound: all synthesised with WebAudio (no files). A soft wind bed, pentatonic chimes for links,
+   a rising chime for a lock and a slow one for dawn. Starts on the first tap/click (browser rule).
+   Mute is remembered. Every call is a no-op when WebAudio is missing or sound is muted.
+   ==================================================================== */
+const Sfx = (function () {
+  const PENTA = [0, 2, 4, 7, 9];
+  let ac = null, master = null, windGain = null, windBand = null, muted = false, step = 0, lastLink = 0, lastBot = 0, lastSpark = 0;
+  const hz = (semi) => 261.63 * Math.pow(2, semi / 12);
+  function note(freq, delay, dur, vol, type) {
+    if (!ac || muted) return;
+    const t = ac.currentTime + delay, o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain();
+    o.type = type || 'sine'; o.frequency.value = freq; o2.type = 'sine'; o2.frequency.value = freq * 2.01;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const g2 = ac.createGain(); g2.gain.value = 0.25;
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(master);
+    o.start(t); o2.start(t); o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+  function startWind() {
+    const len = ac.sampleRate * 2, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0); let last = 0;
+    for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }   // brown noise
+    const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+    windBand = ac.createBiquadFilter(); windBand.type = 'bandpass'; windBand.frequency.value = 450; windBand.Q.value = 0.6;
+    windGain = ac.createGain(); windGain.gain.value = 0.05;
+    const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 0.07; lg.gain.value = 0.025; lfo.connect(lg); lg.connect(windGain.gain);
+    const lfo2 = ac.createOscillator(), lg2 = ac.createGain(); lfo2.frequency.value = 0.043; lg2.gain.value = 180; lfo2.connect(lg2); lg2.connect(windBand.frequency);
+    src.connect(windBand); windBand.connect(windGain); windGain.connect(master);
+    src.start(); lfo.start(); lfo2.start();
+  }
+  return {
+    get ready() { return !!ac; }, get muted() { return muted; },
+    init() {                                                    // call from a user gesture
+      if (ac) { if (ac.state === 'suspended' && ac.resume) ac.resume(); return; }
+      const AC = typeof AudioContext !== 'undefined' ? AudioContext : typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null;
+      if (!AC) return;
+      try { ac = new AC(); master = ac.createGain(); master.gain.value = muted ? 0 : 0.7; master.connect(ac.destination); startWind(); }
+      catch (e) { ac = null; }
+    },
+    setMuted(m) { muted = !!m; if (master) master.gain.setTargetAtTime(muted ? 0 : 0.7, ac.currentTime, 0.05); },
+    suspend(on) { if (!ac) return; try { if (on) ac.suspend(); else ac.resume(); } catch (e) { } },
+    wind(level) { if (windGain && !muted) windGain.gain.setTargetAtTime(0.05 + 0.07 * clamp(level, 0, 1), ac.currentTime, 0.5); },
+    /* a thread ties: your own links ring clearly and climb the scale; other players' links are a faint, rare tick */
+    link(mine) {
+      if (!ac || muted) return; const now = ac.currentTime;
+      if (mine) { if (now - lastLink < 0.08) return; lastLink = now; const s = step++; note(hz(PENTA[s % 5] + 12 * (Math.floor(s / 5) % 2)), 0, 0.9, 0.2); }
+      else { if (now - lastBot < 0.6) return; lastBot = now; note(hz(PENTA[Math.floor(Math.random() * 5)] + 12), 0, 0.7, 0.05); }
+    },
+    spark() { if (!ac || muted) return; const now = ac.currentTime; if (now - lastSpark < 0.1) return; lastSpark = now; note(hz(24 + PENTA[Math.floor(Math.random() * 5)]), 0, 0.25, 0.07); },
+    lock(n, mine) { if (!ac || muted) return; const v = mine ? 0.22 : 0.08; for (let i = 0; i <= n; i++) note(hz(PENTA[i % 5] + 12 * Math.floor(i / 5) + 12), i * 0.11, 1.2, v); step = 0; },
+    pulse() { if (!ac || muted) return; note(hz(-12), 0, 0.5, 0.18); note(hz(-5), 0.05, 0.45, 0.1); },          // low soft swell when you pulse
+    dim() { if (!ac || muted) return; note(hz(7), 0, 0.35, 0.1, 'triangle'); note(hz(0), 0.12, 0.5, 0.08, 'triangle'); },   // two falling notes when you dim
+    tick() { if (!ac || muted) return; note(hz(19), 0, 0.12, 0.08); },                                           // menu / pause button feedback
+    dawn() { if (!ac || muted) return; [0, 4, 7, 12].forEach((s, i) => note(hz(s + 12), i * 0.35, 2.2, 0.16, 'triangle')); },
+    event(e, sim) {
+      if (e.type === 'link') this.link(e.a === sim.humanId || e.b === sim.humanId);
+      else if (e.type === 'lock') this.lock(e.rec.n, e.rec.members.includes(sim.humanId));
+      else if (e.type === 'dawn') this.dawn();
+      else if (e.type === 'spark' && e.id === sim.humanId) this.spark();
+    }
+  };
+})();
+
+/* ====================================================================
+   Drawing
+   ==================================================================== */
+const TAU = Math.PI * 2;
+const D_SOUND = 'M4 9v6h4l5 4V5L8 9zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12', D_MUTE = 'M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6', D_PAUSE = 'M8 5v14M16 5v14';
+const ICONS = {
+  link: '<circle cx="6" cy="12" r="3.5"/><circle cx="18" cy="12" r="3.5"/><path d="M9.5 12h5"/>',
+  pulse: '<circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="10"/>',
+  dim: '<path d="M16 3.5A9 9 0 1 0 20.5 15 7 7 0 0 1 16 3.5z"/>',
+  spark: '<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/>',
+  star3: '<circle cx="5" cy="17" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="19" cy="15" r="2"/><path d="M6 15l5-7M14 7l4 6"/>',
+  banner: '<path d="M6 3v18M6 4h12l-3 4 3 4H6"/>',
+  again: '<path d="M4 12a8 8 0 1 1 3 6.2M4 20v-5h5"/>',
+  card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 5"/>',
+  home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
+  lantern: '<path d="M8 4h8M9 4c-4 4-4 12 0 16h6c4-4 4-12 0-16M9 20h6M12 4v16"/>',
+  sound: '<path d="' + D_SOUND + '"/>',
+  mute: '<path d="' + D_MUTE + '"/>'
+};
+function lerp(a, b, t) { return a + (b - a) * t; }
+function mix(c1, c2, t) { return 'rgb(' + c1.map((v, i) => Math.round(lerp(v, c2[i], t))).join(',') + ')'; }
+
+function bodyPath(c, r) {
+  c.beginPath(); c.moveTo(-.62 * r, -1.05 * r);
+  c.bezierCurveTo(-1.15 * r, -.6 * r, -1.15 * r, .55 * r, -.6 * r, .95 * r); c.lineTo(.6 * r, .95 * r);
+  c.bezierCurveTo(1.15 * r, .55 * r, 1.15 * r, -.6 * r, .62 * r, -1.05 * r); c.closePath();
+}
+/* hand-cut paper lantern with a small painted face. o: {tint, dim, glow, face, you, banner} */
+function drawLantern(c, x, y, r, o) {
+  const g = o.glow == null ? 1 : o.glow, hr = r * (o.dim ? 2.2 : 3.6);
+  const gr = c.createRadialGradient(x, y, r * .3, x, y, hr);
+  gr.addColorStop(0, 'rgba(255,196,98,' + (.5 * g * (o.dim ? .5 : 1)) + ')'); gr.addColorStop(1, 'rgba(255,196,98,0)');
+  c.fillStyle = gr; c.beginPath(); c.arc(x, y, hr, 0, TAU); c.fill();
+  c.save(); c.translate(x, y);
+  if (o.banner && SHAPES[o.banner]) {                          // cosmetic banner from the rewarded moment
+    c.strokeStyle = o.tint; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, 1.05 * r); c.lineTo(0, 1.7 * r); c.stroke();
+    c.fillStyle = '#6b3a6e'; c.beginPath(); c.moveTo(-.7 * r, 1.7 * r); c.lineTo(.7 * r, 1.7 * r); c.lineTo(.7 * r, 2.6 * r); c.lineTo(0, 2.3 * r); c.lineTo(-.7 * r, 2.6 * r); c.closePath(); c.fill();
+    drawShapeIcon(c, o.banner, -.5 * r, 1.78 * r, r, .45 * r, '#8ff0c8', '#ffd27a', .7);
+  } else {
+    c.strokeStyle = o.tint; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 1.05 * r); c.lineTo(0, 1.5 * r); c.stroke();
+    c.fillStyle = o.tint; c.beginPath(); c.arc(0, 1.6 * r, .1 * r, 0, TAU); c.fill();
+  }
+  c.save(); c.translate(1.5, 2); bodyPath(c, r); c.fillStyle = 'rgba(10,5,30,.3)'; c.fill(); c.restore();
+  const bg = c.createLinearGradient(0, -r, 0, r);
+  if (o.dim) { bg.addColorStop(0, '#c9a06a'); bg.addColorStop(1, '#a77a58'); } else { bg.addColorStop(0, '#ffe58f'); bg.addColorStop(1, '#ffa24a'); }
+  bodyPath(c, r); c.fillStyle = bg; c.fill();
+  c.strokeStyle = 'rgba(140,70,40,.3)'; c.lineWidth = 1;
+  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * .3 * r, -1.05 * r); c.quadraticCurveTo(s * .95 * r, 0, s * .3 * r, .95 * r); c.stroke(); }
+  if (o.pat) drawPattern(c, o.pat, r);
+  c.fillStyle = o.tint; c.fillRect(-.68 * r, -1.2 * r, 1.36 * r, .17 * r); c.fillRect(-.64 * r, .9 * r, 1.28 * r, .17 * r);
+  c.fillStyle = '#5b2f5e'; c.strokeStyle = '#5b2f5e'; c.lineWidth = Math.max(1, r * .07);
+  if (o.dim) { for (const s of [-1, 1]) { c.beginPath(); c.arc(s * .3 * r, -.1 * r, .12 * r, .2, Math.PI - .2); c.stroke(); } }
+  else for (const s of [-1, 1]) { c.beginPath(); c.arc(s * .3 * r, -.08 * r, .09 * r, 0, TAU); c.fill(); }
+  c.beginPath(); c.arc(0, .12 * r, .26 * r, .25, Math.PI - .25); c.stroke();
+  c.fillStyle = 'rgba(255,130,120,.35)'; for (const s of [-1, 1]) { c.beginPath(); c.arc(s * .55 * r, .15 * r, .13 * r, 0, TAU); c.fill(); }
+  if (o.you) { c.strokeStyle = '#8ff0c8'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, r * 1.5, 0, TAU); c.setLineDash([5, 5]); c.stroke(); c.setLineDash([]); }
+  c.restore();
+}
+/* painted paper patterns on the lantern body (1 stripes, 2 dots, 3 stars, 4 waves, 5 diamonds); kept clear of the face */
+function drawPattern(c, k, r) {
+  c.save(); bodyPath(c, r); c.clip();
+  c.fillStyle = c.strokeStyle = 'rgba(107,58,110,.55)'; c.lineWidth = Math.max(1, r * .09); c.lineCap = 'round';
+  if (k === 1) { for (const y of [-.8, -.55, .6, .8]) c.fillRect(-1.3 * r, y * r - .05 * r, 2.6 * r, .1 * r); }
+  else if (k === 2) { for (const [x, y] of [[-.6, -.65], [0, -.72], [.6, -.65], [-.6, .68], [0, .72], [.6, .68], [-.88, .02], [.88, .02]]) { c.beginPath(); c.arc(x * r, y * r, .11 * r, 0, TAU); c.fill(); } }
+  else if (k === 3) { for (const [x, y] of [[-.62, -.62], [.62, -.62], [-.62, .68], [.62, .68], [0, -.78], [0, .78]]) star4(c, x * r, y * r, .2 * r); }
+  else if (k === 4) { for (const y of [-.62, .66]) { c.beginPath(); c.moveTo(-1.1 * r, y * r); for (let i = 0; i < 4; i++) c.quadraticCurveTo((-.82 + i * .55) * r, (y - .22) * r, (-.55 + i * .55) * r, y * r); c.stroke(); } }
+  else if (k === 5) { for (const [x, y] of [[0, -.66], [0, .7], [-.9, .03], [.9, .03]]) { c.beginPath(); c.moveTo(x * r, (y - .2) * r); c.lineTo((x + .17) * r, y * r); c.lineTo(x * r, (y + .2) * r); c.lineTo((x - .17) * r, y * r); c.closePath(); c.fill(); } }
+  c.restore();
+}
+function star4(c, x, y, r) {
+  c.beginPath(); c.moveTo(x, y - r); c.quadraticCurveTo(x, y, x + r, y); c.quadraticCurveTo(x, y, x, y + r); c.quadraticCurveTo(x, y, x - r, y); c.quadraticCurveTo(x, y, x, y - r); c.fill();
+}
+function drawShapeIcon(c, key, x, y, w, h, line, dot, alpha) {
+  const sh = SHAPES[key]; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const p of sh.pts) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
+  const s = Math.min(w * .8 / Math.max(x1 - x0, .01), h * .8 / Math.max(y1 - y0, .01)), cx = x + w / 2 - (x0 + x1) / 2 * s, cy = y + h / 2 - (y0 + y1) / 2 * s;
+  c.save(); c.globalAlpha = alpha == null ? 1 : alpha; c.strokeStyle = line; c.lineWidth = 2; c.beginPath();
+  for (const [a, b] of sh.edges) { c.moveTo(cx + sh.pts[a][0] * s, cy + sh.pts[a][1] * s); c.lineTo(cx + sh.pts[b][0] * s, cy + sh.pts[b][1] * s); }
+  c.stroke(); c.fillStyle = dot;
+  for (const p of sh.pts) { c.beginPath(); c.arc(cx + p[0] * s, cy + p[1] * s, 3, 0, TAU); c.fill(); }
+  c.restore();
+}
+
+/* seeded hand-cut city: array of buildings */
+function makeCity(seed, minH, maxH, x0, x1, wMin, wMax, style) {
+  const rng = mulberry32(seed), out = []; let x = x0;
+  while (x < x1) {
+    const w = wMin + rng() * (wMax - wMin), h = minH + rng() * (maxH - minH), roof = rng(), wins = [];
+    for (let k = 0; k < 6; k++) wins.push([rng(), rng(), rng() < .45]);
+    out.push({ x, w, h, roof, wins, j: rng() * 6 - 3, style }); x += w - 6 + rng() * 10;
+  }
+  return out;
+}
+/* Three night-city skylines (hand-cut paper): harbour roofs, round domes with masts and plain spires, tall towers.
+   Each has its own far/near layers, night sky colours, dawn-lit fills and window colour. */
+const SKYLINES = [
+  { name: 'Harbour', far: makeCity(11, 70, 150, -300, 1400, 40, 100, 0), near: makeCity(29, 40, 110, -300, 1400, 40, 100, 0),
+    top: [27, 22, 70], bot: [86, 44, 96], farN: [48, 32, 88], nearN: [30, 21, 62], win: '#ffd27a' },
+  { name: 'Domes', far: makeCity(41, 60, 120, -300, 1400, 50, 95, 1), near: makeCity(57, 40, 95, -300, 1400, 55, 100, 1),
+    top: [18, 30, 68], bot: [58, 62, 112], farN: [38, 48, 96], nearN: [22, 30, 66], win: '#ffe3a0' },
+  { name: 'Towers', far: makeCity(73, 90, 210, -300, 1400, 30, 56, 2), near: makeCity(91, 60, 150, -300, 1400, 32, 60, 2),
+    top: [36, 18, 64], bot: [112, 52, 100], farN: [58, 34, 90], nearN: [34, 20, 60], win: '#cfeaff' }
+];
+function roofPath(c, b, x, top) {
+  if (b.style === 1) {                                           // round domes, flat tops with a mast, plain pointed spires
+    if (b.roof < .45) c.quadraticCurveTo(x + b.w / 2 + b.j, top - b.w * .75, x + b.w + b.j, top);
+    else if (b.roof < .7) { c.lineTo(x + b.w / 2 - 2, top); c.lineTo(x + b.w / 2 - 1, top - 26); c.lineTo(x + b.w / 2 + 1, top - 26); c.lineTo(x + b.w / 2 + 2, top); c.lineTo(x + b.w, top); }
+    else { c.lineTo(x + b.w * .5, top - b.w * 1.1); c.lineTo(x + b.w, top); }
+  } else if (b.style === 2) {                                    // stepped tops and thin spires
+    if (b.roof < .4) { c.lineTo(x + b.w * .2, top); c.lineTo(x + b.w * .2, top - 10); c.lineTo(x + b.w * .8, top - 10); c.lineTo(x + b.w * .8, top); c.lineTo(x + b.w, top); }
+    else if (b.roof < .7) { c.lineTo(x + b.w * .45, top); c.lineTo(x + b.w * .5, top - 38); c.lineTo(x + b.w * .55, top); c.lineTo(x + b.w, top); }
+    else c.lineTo(x + b.w, top - 6);
+  } else if (b.roof < .3) { c.lineTo(x + b.w / 2, top - 22); c.lineTo(x + b.w + b.j, top); }
+  else if (b.roof < .55) { c.lineTo(x + b.w * .35, top - 14); c.lineTo(x + b.w, top - 6); }
+  else c.lineTo(x + b.w - b.j, top - 3);
+}
+function drawCity(c, list, baseY, offX, fill, win, dawn) {
+  c.fillStyle = fill;
+  for (const b of list) {
+    const x = b.x + offX, top = baseY - b.h;
+    c.beginPath(); c.moveTo(x, baseY + 400); c.lineTo(x + b.j, top);
+    roofPath(c, b, x, top);
+    c.lineTo(x + b.w, baseY + 400); c.closePath(); c.fill();
+  }
+  if (win) {
+    c.fillStyle = win;
+    for (const b of list) for (const w of b.wins) if (w[2] && dawn < .7) c.fillRect(b.x + offX + 6 + w[0] * (b.w - 16), baseY - b.h + 12 + w[1] * (b.h - 22), 5, 7);
+  }
+}
+
+/* Pointing hand drawn in code; the fingertip is at (x, y), s is its height. */
+function rrect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function drawHand(c, x, y, s) {
+  c.save(); c.translate(x, y); c.scale(s / 100, s / 100); c.lineWidth = 4; c.strokeStyle = '#3a1f45'; c.fillStyle = '#fff4e0'; c.lineJoin = 'round';
+  rrect(c, -12, 0, 24, 62, 12); c.fill(); c.stroke();              // index finger
+  rrect(c, -34, 38, 68, 62, 18); c.fill(); c.stroke();              // palm
+  rrect(c, -46, 52, 22, 36, 11); c.fill(); c.stroke();              // thumb
+  c.strokeStyle = 'rgba(58,31,69,.35)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-4, 46); c.lineTo(-4, 70); c.moveTo(10, 50); c.lineTo(10, 72); c.stroke();
+  c.restore();
+}
+
+/* One place for every HUD rectangle, so the layout can be checked for bounds at any size. */
+function hudLayout(W, H, u) {
+  const pad = 12 * u, cw = 58 * u, ch = 62 * u, gap = 8 * u, tot = 3 * cw + 2 * gap, phone = W < 480;
+  const x0 = phone ? W / 2 - tot / 2 : clamp(W / 2 - tot / 2, pad + 70 * u, W - tot - 40 * u), sy = phone ? 66 * u : 10 * u;
+  const cards = [0, 1, 2].map(i => ({ x: x0 + i * (cw + gap), y: sy, w: cw, h: ch }));
+  const by = H - 60 * u, r = 34 * u, r2 = 26 * u;
+  return { pad, cards, mute: { x: pad + r2, y: by, r: r2, k: 'mute' }, pause: { x: W - pad - r2, y: by, r: r2, k: 'pause' }, status: { x: x0 + tot / 2, y: sy + ch + 20 * u, w: Math.min(W - 2 * pad - 50 * u, 260 * u), h: 24 * u },
+    glow: { x: pad, y: 8 * u, w: 90 * u, h: 52 * u }, timer: { x: W - pad - 70 * u, y: 8 * u, w: 70 * u, h: 34 * u },
+    moon: { x: W - 20 * u, y0: 62 * u, y1: H - 110 * u },
+    pulse: { x: W / 2 - 62 * u, y: by, r, k: 'pulse' }, dim: { x: W / 2 + 62 * u, y: by, r, k: 'dim' } };
+}
+class View {
+  constructor(canvas) { this.cv = canvas; this.c = canvas.getContext('2d'); this.W = 1; this.H = 1; this.dpr = 1; this.scale = 1; this.cx = CFG.worldW / 2; this.cy = CFG.worldH / 2; this.resize(); }
+  resize() {
+    this.dpr = Math.min(2, window.devicePixelRatio || 1); this.W = innerWidth; this.H = innerHeight;
+    this.cv.width = Math.round(this.W * this.dpr); this.cv.height = Math.round(this.H * this.dpr);
+    this.scale = Math.min(this.W, this.H) / 620; this.ui = clamp(Math.min(this.W, this.H) / 400, .85, 1.5);
+  }
+  follow(tx, ty, k) {
+    this.cx += (tx - this.cx) * k; this.cy += (ty - this.cy) * k;
+    const vw = this.W / this.scale, vh = this.H / this.scale;
+    this.cx = vw >= CFG.worldW ? CFG.worldW / 2 : clamp(this.cx, vw / 2, CFG.worldW - vw / 2);
+    this.cy = vh >= CFG.worldH ? CFG.worldH / 2 : clamp(this.cy, vh / 2, CFG.worldH - vh / 2);
+  }
+  toScreen(wx, wy) { return { x: (wx - this.cx) * this.scale + this.W / 2, y: (wy - this.cy) * this.scale + this.H / 2 }; }
+  toWorld(sx, sy) { return { x: (sx - this.W / 2) / this.scale + this.cx, y: (sy - this.H / 2) / this.scale + this.cy }; }
+  hud() { return hudLayout(this.W, this.H, this.ui); }
+}
+
+const STARS = Array.from({ length: 90 }, (_, i) => { const r = mulberry32(i * 7 + 3); return { x: r(), y: r() * .8, s: .6 + r() * 1.6, ph: r() * 6 }; });
+const NIGHT_TOP = [27, 22, 70], NIGHT_BOT = [86, 44, 96], DAWN_TOP = [92, 70, 140], DAWN_BOT = [255, 176, 140];
+
+function byDepth(a, b) { return (a.isYou ? 1 : 0) - (b.isYou ? 1 : 0) || a.y - b.y; }
+class Renderer {
+  constructor(view) { this.v = view; this.rings = []; this.floats = []; this.parts = []; this.banner = null; this.shake = 0; this.bannerShape = null;
+    this.now = 0; this.locks = []; this.taps = []; this.btnT = {}; this.denyT = {}; this.flashT = null; this.tut = null; this.hand = null; this.pops = {}; this.order = []; this.sky = 0; this.sfx = null; this.muted = false; }
+  reset() { this.pops = {}; this.rings = [];this.floats = []; this.parts = []; this.banner = null; this.locks = []; this.taps = []; this.flashT = null; this.tut = null; }
+  tap(x, y) { this.taps.push({ x, y, t0: this.now }); }
+  press(k, denied) { (denied ? this.denyT : this.btnT)[k] = this.now; }
+  consume(sim) {
+    const now = this.now;
+    for (const e of sim.events) {
+      if (this.sfx) this.sfx.event(e, sim);
+      if (e.type === 'link') {
+        this.pops[e.a] = now; this.pops[e.b] = now;
+        for (let i = 0; i < 8; i++) this.burst(e.x, e.y, '#8ff0c8');
+        this.rings.push({ x: e.x, y: e.y, t0: now, c: '#8ff0c8', max: 90, life: .5 });
+        if (e.a === sim.humanId || e.b === sim.humanId) this.flashT = { a: e.a, b: e.b, until: now + 2.5 };
+      }
+      else if (e.type === 'spark') { for (let i = 0; i < 5; i++) this.burst(e.x, e.y, '#ffe08a'); if (e.id === sim.humanId) this.floats.push({ x: e.x, y: e.y, s: '+1', t0: now, c: '#ffe08a' }); }
+      else if (e.type === 'pulse') this.pops[e.id] = now, this.rings.push({ x: e.x, y: e.y, t0: now, c: e.id === sim.humanId ? '#8ff0c8' : '#ffd27a' });
+      else if (e.type === 'dawn') this.banner = { s: STR.dawn, until: now + 4 };
+      else if (e.type === 'lock') {
+        const r = e.rec;
+        this.locks.push({ rec: r, t0: now });
+        for (const p of r.pts) for (let i = 0; i < 14; i++) this.burst(p[0], p[1], i % 2 ? '#8ff0c8' : '#ffd27a');
+        if (r.members.includes(sim.humanId)) this.flashT = null;
+      }
+    }
+    sim.events.length = 0;
+  }
+  burst(x, y, c) { if (this.parts.length > 360) return; const a = Math.random() * TAU, s = 30 + Math.random() * 70; this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, age: 0, life: .6 + Math.random() * .5, c, r: 1.5 + Math.random() * 2 }); }
+
+  skyColors(sim) {
+    const d = clamp((sim.t - 135) / 30, 0, 1), sk = SKYLINES[this.sky]; return [mix(sk.top, DAWN_TOP, d), mix(sk.bot, DAWN_BOT, d), d];
+  }
+  draw(sim, dt, mode) {
+    const v = this.v, c = v.c, W = v.W, H = v.H, t = sim.t, you = sim.players[sim.humanId];
+    this.now += dt; const now = this.now;
+    const [top, bot, dawnF] = this.skyColors(sim);
+    c.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, top); g.addColorStop(1, bot); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    const tw = performance.now() / 1000;
+    c.fillStyle = '#fff4e0';
+    for (const s of STARS) {
+      const x = (((s.x * W - v.cx * v.scale * .15) % W) + W) % W, y = (((s.y * H - v.cy * v.scale * .1) % (H * .8)) + H * .8) % (H * .8);
+      c.globalAlpha = (.35 + .35 * Math.sin(tw * 1.5 + s.ph)) * (1 - dawnF * .9); c.beginPath(); c.arc(x, y, s.s, 0, TAU); c.fill();
+    }
+    c.globalAlpha = 1;
+    // world transform
+    const k = v.dpr * v.scale;
+    c.setTransform(k, 0, 0, k, v.dpr * (W / 2 - v.cx * v.scale), v.dpr * (H / 2 - v.cy * v.scale));
+    const baseY = CFG.worldH - 10;
+    const sk = SKYLINES[this.sky];
+    drawCity(c, sk.far, baseY - 40 + (v.cy - CFG.worldH / 2) * .08, (v.cx - 500) * .12, mix(sk.farN, [190, 120, 150], dawnF), null, dawnF);
+    drawCity(c, sk.near, baseY, 0, mix(sk.nearN, [120, 70, 120], dawnF), sk.win, dawnF);
+    // gusts
+    c.lineCap = 'round';
+    for (const gu of sim.gusts) {
+      c.save(); c.translate(gu.x, gu.y); c.rotate(gu.a); c.strokeStyle = 'rgba(255,244,224,.16)'; c.lineWidth = 3;
+      for (let i = 0; i < 6; i++) {
+        const off = (i - 2.5) * gu.r * .28, ph = ((tw * 70 + i * 83) % (gu.r * 2)) - gu.r, len = gu.r * .45, half = Math.sqrt(Math.max(0, gu.r * gu.r - off * off));
+        const a0 = clamp(ph, -half, half), a1 = clamp(ph + len, -half, half);
+        if (a1 > a0) { c.beginPath(); c.moveTo(a0, off); c.quadraticCurveTo((a0 + a1) / 2, off - 10, a1, off); c.stroke(); }
+      }
+      c.restore();
+    }
+    // locked constellations (shared sky)
+    for (const r of sim.locked) {
+      c.strokeStyle = 'rgba(143,240,200,.35)'; c.lineWidth = 2; c.beginPath();
+      for (const [a, b] of r.edges) { c.moveTo(r.pts[a][0], r.pts[a][1]); c.lineTo(r.pts[b][0], r.pts[b][1]); } c.stroke();
+      c.fillStyle = 'rgba(255,226,140,.8)'; for (const p of r.pts) star4(c, p[0], p[1], 7);
+    }
+    // sparks
+    for (const s of sim.sparks) { c.fillStyle = '#ffe08a'; c.globalAlpha = .6 + .4 * Math.sin(tw * 3 + s.ph); star4(c, s.x, s.y, 9 + 2 * Math.sin(tw * 2 + s.ph)); }
+    c.globalAlpha = 1;
+    // threads
+    for (const l of sim.links) {
+      const a = sim.players[l.a], b = sim.players[l.b], comp = sim.compOf[l.a], good = comp && comp.m && comp.m.ok;
+      const hold = a.dimT > 0 || b.dimT > 0, left = l.exp - t, al = hold ? 1 : clamp(left / 3, .35, 1);
+      const mx = (a.x + b.x) / 2 + Math.sin(tw * 2 + l.a) * 4, my = (a.y + b.y) / 2 + 10 + Math.cos(tw * 2 + l.b) * 3;
+      c.strokeStyle = 'rgba(143,240,200,' + .22 * al + ')'; c.lineWidth = good ? 9 : 6; c.beginPath(); c.moveTo(a.x, a.y); c.quadraticCurveTo(mx, my, b.x, b.y); c.stroke();
+      c.strokeStyle = good ? '#d8fff0' : 'rgba(143,240,200,' + al + ')'; c.lineWidth = good ? 3 : 2.2; c.beginPath(); c.moveTo(a.x, a.y); c.quadraticCurveTo(mx, my, b.x, b.y); c.stroke();
+      const fl = this.flashT;
+      if (fl && now < fl.until && ((fl.a === l.a && fl.b === l.b) || (fl.a === l.b && fl.b === l.a))) {   // show the new thread
+        c.strokeStyle = 'rgba(216,255,240,' + (.35 + .3 * Math.sin(now * 10)) + ')'; c.lineWidth = 14; c.beginPath(); c.moveTo(a.x, a.y); c.quadraticCurveTo(mx, my, b.x, b.y); c.stroke();
+      }
+      if (good) { c.strokeStyle = 'rgba(255,210,122,' + (.35 + .25 * Math.sin(now * 8)) + ')'; c.lineWidth = 16; c.beginPath(); c.moveTo(a.x, a.y); c.quadraticCurveTo(mx, my, b.x, b.y); c.stroke(); }
+    }
+    for (const cm of sim.comps) if (cm.progress > 0 && cm.progress < 1) {
+      const mx = cm.nodes.reduce((a, p) => a + p.x, 0) / cm.nodes.length, my = cm.nodes.reduce((a, p) => a + p.y, 0) / cm.nodes.length;
+      c.strokeStyle = '#ffd27a'; c.lineWidth = 4; c.beginPath(); c.arc(mx, my, 26, -Math.PI / 2, -Math.PI / 2 + TAU * cm.progress); c.stroke();
+    }
+    // pulse rings
+    this.rings = this.rings.filter(r => now - r.t0 < (r.life || 1.1));
+    for (const r of this.rings) { const q = (now - r.t0) / (r.life || 1.1); c.strokeStyle = r.c; c.globalAlpha = (1 - q) * .8; c.lineWidth = 4; c.beginPath(); c.arc(r.x, r.y, 20 + q * (r.max || CFG.pulseRange * .9), 0, TAU); c.stroke(); }
+    c.globalAlpha = 1;
+    // lanterns (others first, you on top)
+    const order = this.order; order.length = 0; for (let i = 0; i < sim.players.length; i++) order.push(sim.players[i]);   // reused array, no per-frame allocation
+    order.sort(byDepth);
+    for (let i = 0; i < order.length; i++) { const p = order[i];
+      const dim = p.dimT > 0, glow = p.ember > 0 ? 1.5 : 1, pop = this.popOf(p.id);
+      if (p.inviting) {                                    // invitation: a soft pulsing halo
+        const q = (now * 1.6 + p.id * .3) % 1; c.strokeStyle = 'rgba(143,240,200,' + (1 - q) * .9 + ')'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y, CFG.lanternR * (1.4 + q * 1.6), 0, TAU); c.stroke();
+      }
+      c.save(); if (pop !== 1) { c.translate(p.x, p.y); c.scale(pop, pop); c.translate(-p.x, -p.y); }
+      drawLantern(c, p.x, p.y, CFG.lanternR, { tint: p.tint, pat: p.pat, dim, glow, you: p.isYou, banner: p.isYou ? this.bannerShape : null });
+      c.restore();
+      if (!p.isYou) { c.fillStyle = 'rgba(255,244,224,.55)'; c.font = '11px system-ui,sans-serif'; c.textAlign = 'center'; c.fillText(p.name, p.x, p.y - 32); }
+    }
+    // particles and floats
+    for (let i = this.parts.length - 1; i >= 0; i--) { const q = this.parts[i]; if ((q.age += dt) >= q.life) { this.parts[i] = this.parts[this.parts.length - 1]; this.parts.pop(); } }
+    for (const p of this.parts) { p.x += p.vx * dt; p.y += p.vy * dt; c.globalAlpha = 1 - p.age / p.life; c.fillStyle = p.c; c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU); c.fill(); }
+    c.globalAlpha = 1;
+    this.floats = this.floats.filter(f => now - f.t0 < 1.4);
+    for (const f of this.floats) { const q = (now - f.t0) / 1.4; c.globalAlpha = 1 - q; c.fillStyle = f.c; c.font = 'bold ' + (f.big ? 30 : 18) + 'px system-ui,sans-serif'; c.textAlign = 'center'; c.fillText(f.s, f.x, f.y - q * 40); }
+    c.globalAlpha = 1;
+    this.drawLocks(sim);
+    if (mode === 'play' && this.tut && this.tut.step === 1 && you) this.guideLine(sim, you);
+    // HUD
+    c.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
+    if (mode === 'play' || mode === 'ending') this.hud(sim, you, mode);
+    this.drawTaps();
+    if (mode === 'play' && this.tut && this.tut.step < 3 && you) this.guide(sim);
+    const lf = this.locks.length ? this.now - this.locks[this.locks.length - 1].t0 : 9;      // quick glow flash on completion
+    if (lf < .35) { c.fillStyle = 'rgba(255,240,200,' + .28 * (1 - lf / .35) + ')'; c.fillRect(0, 0, W, H); }
+  }
+  popOf(id) {                                              // scale pop of lanterns inside a fresh constellation
+    for (let i = 0; i < this.locks.length; i++) { const L = this.locks[i]; if (L.rec.members.includes(id)) { const a = this.now - L.t0; if (a < .5) return 1 + .35 * Math.sin(a / .5 * Math.PI); } }
+    const t0 = this.pops[id];                              // small squash when a thread ties or a pulse leaves
+    if (t0 !== undefined) { const a = this.now - t0; if (a < .3) return 1 + .16 * Math.sin(a / .3 * Math.PI); }
+    return 1;
+  }
+  /* shape flashes, locks into the sky (stars stamp in), score pops on every member */
+  drawLocks(sim) {
+    const c = this.v.c; this.locks = this.locks.filter(L => this.now - L.t0 < 1.9);
+    for (const L of this.locks) {
+      const a = this.now - L.t0, r = L.rec, ps = r.members.map(id => sim.players[id]), mx = ps.reduce((s, p) => s + p.x, 0) / ps.length, my = ps.reduce((s, p) => s + p.y, 0) / ps.length;
+      const fade = 1 - clamp((a - 1.4) / .5, 0, 1);
+      if (a < 1.1) {                                             // flashing outline
+        c.save(); c.lineCap = 'round'; c.lineJoin = 'round'; c.globalAlpha = (.55 + .45 * Math.sin(a * 22)) * (1 - a / 1.1);
+        for (const w of [22, 8]) { c.strokeStyle = w > 10 ? '#ffd27a' : '#ffffff'; c.lineWidth = w; c.beginPath(); for (const [i, j] of r.edges) { c.moveTo(ps[i].x, ps[i].y); c.lineTo(ps[j].x, ps[j].y); } c.stroke(); }
+        c.restore();
+      }
+      const k = clamp((a - .35) / .5, 0, 1), sc = 1 + 2.2 * (1 - k) * (1 - k);        // stars drop onto the sky
+      c.fillStyle = '#fff1c9'; c.globalAlpha = fade; for (const p of r.pts) star4(c, p[0], p[1], 9 * sc); c.globalAlpha = 1;
+      c.strokeStyle = '#ffd27a'; c.lineWidth = 3; c.globalAlpha = (1 - k) * .9; c.beginPath(); c.arc(mx, my, 20 + a * 260, 0, TAU); c.stroke(); c.globalAlpha = 1;
+      const pq = clamp(a / .18, 0, 1), s2 = a < .18 ? pq * 1.5 : 1.5 - .5 * clamp((a - .18) / .25, 0, 1);
+      c.globalAlpha = fade; c.textAlign = 'center';
+      ps.forEach(p => { c.save(); c.translate(p.x, p.y - 38 - Math.min(a, 1.4) * 26); c.scale(s2, s2); c.font = 'bold ' + (p.isYou ? 28 : 20) + 'px system-ui,sans-serif'; c.fillStyle = '#2a1c4a'; c.fillText('+' + r.value, 1.5, 2); c.fillStyle = p.isYou ? '#fff1c9' : '#ffd27a'; c.fillText('+' + r.value, 0, 0); c.restore(); });
+      c.save(); c.translate(mx, my - 92 - a * 14); c.scale(s2, s2); c.font = 'bold 30px system-ui,sans-serif'; c.fillStyle = '#2a1c4a'; c.fillText(STR.shapes[r.shape] + '!', 1.5, 2); c.fillStyle = '#8ff0c8'; c.fillText(STR.shapes[r.shape] + '!', 0, 0); c.restore();
+      c.globalAlpha = 1;
+    }
+  }
+  drawTaps() {
+    const c = this.v.c; this.taps = this.taps.filter(p => this.now - p.t0 < .4);
+    for (const p of this.taps) { const q = (this.now - p.t0) / .4; c.strokeStyle = 'rgba(143,240,200,' + (1 - q) + ')'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y, 8 + q * 30, 0, TAU); c.stroke(); }
+  }
+  /* dashed preview thread from you to the lantern to touch (tutorial step 1) */
+  guideLine(sim, you) {
+    const tg = this.tut.target(sim); if (!tg) return; const c = this.v.c;
+    c.save(); c.strokeStyle = 'rgba(143,240,200,.75)'; c.lineWidth = 3; c.setLineDash([8, 9]); c.lineDashOffset = -this.now * 30; c.beginPath(); c.moveTo(you.x, you.y); c.lineTo(tg.x, tg.y); c.stroke(); c.restore();
+  }
+  /* pulsing hand on exactly the next action; arrow at the screen edge when it is off screen */
+  guide(sim) {
+    const v = this.v, c = v.c, u = v.ui, now = this.now, tg = this.tut.target(sim); this.hand = null; if (!tg) return;
+    let p = v.toScreen(tg.x, tg.y), dx = 0, dy = 0;
+    if (this.tut.step === 0) {                                 // show a short drag towards the nearest friend
+      const near = sim.players.filter(q => q.id !== sim.humanId).slice(0, 3).sort((a, b) => Math.hypot(a.x - tg.x, a.y - tg.y) - Math.hypot(b.x - tg.x, b.y - tg.y))[0];
+      const q = near ? v.toScreen(near.x, near.y) : { x: p.x + 1, y: p.y }, d = Math.hypot(q.x - p.x, q.y - p.y) || 1, ph = (now % 1.8) / 1.8, e = ph < .75 ? 1 - Math.pow(1 - ph / .75, 2) : 1;
+      dx = (q.x - p.x) / d * 70 * u * e; dy = (q.y - p.y) / d * 70 * u * e;
+      c.strokeStyle = 'rgba(255,244,224,.5)'; c.lineWidth = 4 * u; c.setLineDash([2, 10 * u]); c.lineCap = 'round'; c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x + dx, p.y + dy); c.stroke(); c.setLineDash([]);
+    }
+    const m = 34 * u;
+    if (p.x < m || p.x > v.W - m || p.y < m + 60 * u || p.y > v.H - 90 * u) {
+      const cx = v.W / 2, cy = v.H / 2, ang = Math.atan2(p.y - cy, p.x - cx), ax = clamp(p.x, m, v.W - m), ay = clamp(p.y, m + 60 * u, v.H - 100 * u);
+      c.save(); c.translate(ax, ay); c.rotate(ang); const s = 1 + .2 * Math.sin(now * 8); c.scale(s * u, s * u);
+      c.fillStyle = '#ffd27a'; c.strokeStyle = '#3a1f45'; c.lineWidth = 3; c.beginPath(); c.moveTo(18, 0); c.lineTo(-10, -16); c.lineTo(-10, 16); c.closePath(); c.fill(); c.stroke(); c.restore();
+      this.hand = { x: ax, y: ay, arrow: true }; return;
+    }
+    const pr = (now * 1.2) % 1; c.strokeStyle = 'rgba(255,226,140,' + (1 - pr) * .9 + ')'; c.lineWidth = 4; c.beginPath(); c.arc(p.x + dx, p.y + dy, (30 + pr * 34) * u, 0, TAU); c.stroke();
+    c.strokeStyle = 'rgba(255,226,140,.9)'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y, 34 * u, 0, TAU); c.stroke();
+    const bob = Math.sin(now * 6) * 5 * u, hs = (1 + .08 * Math.sin(now * 6)) * u * 1.1;
+    drawHand(c, p.x + dx + 4 * u, p.y + dy + 30 * u + bob, hs * 46);
+    this.hand = { x: p.x + dx, y: p.y + dy, arrow: false, target: tg };
+  }
+  txt(s, x, y, size, col, al, wt) { const c = this.v.c; c.font = (wt || 'bold') + ' ' + size + 'px system-ui,sans-serif'; c.fillStyle = col; c.textAlign = al || 'left'; c.textBaseline = 'alphabetic'; c.fillText(s, x, y); }
+  hud(sim, you, mode) {
+    const v = this.v, c = v.c, u = v.ui, W = v.W, H = v.H, t = sim.t, now = this.now, L = hudLayout(W, H, u), pad = L.pad;
+    // glow + rank
+    const rank = sim.players.slice().sort((a, b) => b.glow - a.glow).indexOf(you) + 1;
+    c.fillStyle = '#ffd27a'; star4(c, pad + 12 * u, 28 * u, 12 * u);
+    this.txt(String(you.glow), pad + 30 * u, 36 * u, 28 * u, '#ffd27a');
+    this.txt('#' + rank, pad + 30 * u, 54 * u, 13 * u, 'rgba(255,244,224,.8)', 'left', '600');
+    // time (and moon track on the right edge)
+    const left = Math.max(0, sim.duration - t), mm = Math.floor(left / 60), ss = Math.floor(left % 60);
+    this.txt(mm + ':' + (ss < 10 ? '0' : '') + ss, W - pad, 34 * u, 24 * u, sim.dawn ? '#ffc9a8' : '#fff4e0', 'right');
+    const M = L.moon, tx = M.x, ty0 = M.y0, ty1 = M.y1, q = clamp(t / sim.duration, 0, 1), my = lerp(ty0, ty1, q);
+    c.strokeStyle = 'rgba(255,244,224,.25)'; c.lineWidth = 2; c.beginPath(); c.moveTo(tx, ty0); c.lineTo(tx, ty1); c.stroke();
+    c.fillStyle = 'rgba(255,200,160,.5)'; c.fillRect(tx - 10 * u, ty1, 20 * u, 3);
+    c.fillStyle = '#fff1c9'; c.beginPath(); c.arc(tx, my, 9 * u, 0, TAU); c.fill();
+    c.fillStyle = sim.dawn ? '#ffb08c' : '#2a2160'; c.beginPath(); c.arc(tx + 4 * u, my - 2 * u, 8 * u, 0, TAU); c.fill();
+    // wanted cards; the card your group fits glows, the guide card pulses in tutorial step 2
+    const hc = sim.compOf[you.id], fit = hc && hc.m ? hc.m : null;
+    let guideCard = -1;
+    if (this.tut && this.tut.step === 2) {                      // the card the guide picked; if it was replaced, any card of the size still missing
+      guideCard = sim.wanted.findIndex(w => w.shape === this.tut.shape);
+      if (guideCard < 0) guideCard = sim.wanted.findIndex(w => SHAPES[w.shape].n === (hc ? hc.nodes.length + 1 : 3));
+    }
+    sim.wanted.forEach((w, i) => {
+      const { x, y } = L.cards[i], cw = L.cards[i].w, ch = L.cards[i].h, sh = SHAPES[w.shape], on = fit && fit.shape === w.shape;
+      if (on || i === guideCard) {
+        const pu = .5 + .5 * Math.sin(now * (on && fit.ok ? 14 : 6));
+        c.save(); c.shadowColor = '#ffd27a'; c.shadowBlur = (on && fit.ok ? 26 : 14) * u * (.5 + pu); c.fillStyle = 'rgba(255,210,122,' + (on && fit.ok ? .5 : .22) + ')'; c.fillRect(x - 5 * u, y - 5 * u, cw + 10 * u, ch + 10 * u); c.restore();
+      }
+      c.fillStyle = 'rgba(58,42,102,.88)'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + cw, y + 3); c.lineTo(x + cw - 2, y + ch); c.lineTo(x + 2, y + ch - 3); c.closePath(); c.fill();
+      if (on) { c.strokeStyle = fit.ok ? '#fff1c9' : '#ffd27a'; c.lineWidth = fit.ok ? 4 : 2.5; c.stroke(); }
+      drawShapeIcon(c, w.shape, x + 4 * u, y + 5 * u, cw - 8 * u, ch - 26 * u, on ? '#fff1c9' : '#8ff0c8', '#ffd27a');
+      this.txt('+' + sh.value * sim.mult(), x + cw / 2, y + ch - 7 * u, 15 * u, sim.dawn ? '#ffc9a8' : '#ffd27a', 'center');
+    });
+    // goal line: what to do now, and how far along you are
+    const n = hc ? hc.nodes.length : 0, prog = hc ? hc.progress || 0 : 0;
+    const goal = !hc ? STR.goalLink : fit && fit.ok ? STR.goalHold : fit ? STR.goalFit : n >= 4 ? STR.goalBig : STR.goalAdd;
+    const S = L.status; c.fillStyle = 'rgba(58,42,102,.8)'; rrect(c, S.x - S.w / 2, S.y - 17 * u, S.w, S.h, 12 * u); c.fill();
+    this.txt(goal, S.x, S.y, 14 * u, fit && fit.ok ? '#ffd27a' : '#fff4e0', 'center', '600');
+    if (prog > 0) { c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(S.x - 60 * u, S.y + 12 * u, 120 * u, 5 * u); c.fillStyle = '#ffd27a'; c.fillRect(S.x - 60 * u, S.y + 12 * u, 120 * u * prog, 5 * u); }
+    // buttons (pop when pressed, shake when still cooling down)
+    for (const b of [L.pulse, L.dim]) {
+      const cd = b.k === 'pulse' ? you.pulseCd / CFG.pulseCd : (you.dimT > 0 ? 0 : you.dimCd / CFG.dimCd), on = b.k === 'dim' && you.dimT > 0;
+      const pa = now - (this.btnT[b.k] == null ? -9 : this.btnT[b.k]), da = now - (this.denyT[b.k] == null ? -9 : this.denyT[b.k]);
+      const sc = 1 + (pa < .25 ? .25 * (1 - pa / .25) : 0), sx = da < .3 ? Math.sin(da * 60) * 6 * u * (1 - da / .3) : 0;
+      c.save(); c.translate(b.x + sx, b.y); c.scale(sc, sc);
+      c.fillStyle = on ? '#ffb347' : 'rgba(58,42,102,.88)'; c.beginPath(); c.arc(0, 0, b.r, 0, TAU); c.fill();
+      c.strokeStyle = da < .3 ? '#ff9a8a' : '#8ff0c8'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, b.r - 3, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - cd)); c.stroke();
+      c.save(); c.translate(-12 * u, -12 * u); c.scale(u, u); c.strokeStyle = on ? '#3a1f45' : '#fff4e0'; c.lineWidth = 2; c.lineCap = 'round';
+      const path = new Path2D(); this.iconPaths(path, b.k); c.stroke(path); c.restore(); c.restore();
+      this.txt(b.k === 'pulse' ? STR.pulse : STR.dim, b.x, b.y + b.r + 12 * u, 12 * u, 'rgba(255,244,224,.8)', 'center', '600');
+    }
+    for (const b of [L.mute, L.pause]) {                       // small round buttons: sound on/off and pause
+      c.fillStyle = 'rgba(58,42,102,.88)'; c.beginPath(); c.arc(b.x, b.y, b.r, 0, TAU); c.fill();
+      c.save(); c.translate(b.x - 12 * u, b.y - 12 * u); c.scale(u, u);
+      c.strokeStyle = '#fff4e0'; c.lineWidth = 2; c.lineCap = 'round'; c.lineJoin = 'round';
+      c.stroke(new Path2D(b.k === 'pause' ? D_PAUSE : this.muted ? D_MUTE : D_SOUND)); c.restore();
+    }
+    if (t < 8 && mode === 'play' && !this.tut) this.txt(STR.hintMove, W / 2, H - 130 * u, 16 * u, 'rgba(255,244,224,.85)', 'center', '600');
+    if (this.banner && now < this.banner.until) this.txt(this.banner.s, W / 2, H * .38, 26 * u, '#ffe0c8', 'center');
+    if (mode === 'ending') this.txt(STR.sunrise, W / 2, H * .45, 40 * u, '#ffe0c8', 'center');
+  }
+  iconPaths(p, k) {
+    if (k === 'pulse') { p.moveTo(14.5, 12); p.arc(12, 12, 2.5, 0, TAU); p.moveTo(18.5, 12); p.arc(12, 12, 6.5, 0, TAU); p.moveTo(22, 12); p.arc(12, 12, 10, 0, TAU); }
+    else p.addPath(new Path2D('M16 3.5A9 9 0 1 0 20.5 15 7 7 0 0 1 16 3.5z'));
+  }
+}
+
+/* Postcard of the shared sky, drawn at dawn. */
+function drawPostcard(cv, sim, you, bannerShape, skyIdx) {
+  const c = cv.getContext('2d'), W = cv.width, H = cv.height;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#3b2a6b'); g.addColorStop(.55, '#b0627f'); g.addColorStop(1, '#ffc29a'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(255,244,224,.7)'; for (const s of STARS) { c.beginPath(); c.arc(s.x * W, s.y * H * .7, s.s, 0, TAU); c.fill(); }
+  c.fillStyle = '#ffe3b8'; c.beginPath(); c.arc(W * .8, H * .62, 46, 0, TAU); c.fill();
+  const sx = W / CFG.worldW, sy = H * .72 / CFG.worldH;
+  for (const r of sim.locked) {
+    c.strokeStyle = 'rgba(143,240,200,.85)'; c.lineWidth = 3; c.beginPath();
+    for (const [a, b] of r.edges) { c.moveTo(r.pts[a][0] * sx, r.pts[a][1] * sy + 90); c.lineTo(r.pts[b][0] * sx, r.pts[b][1] * sy + 90); } c.stroke();
+    c.fillStyle = '#fff1c9'; for (const p of r.pts) star4(c, p[0] * sx, p[1] * sy + 90, 11);
+  }
+  c.save(); c.translate(0, H - 150 * (H / 1500) * 1.3 - 150); c.scale(W / 1000, 1.4);
+  const sk = SKYLINES[skyIdx || 0];
+  drawCity(c, sk.far, 100, 0, '#7a4a78', null, 1); drawCity(c, sk.near, 140, 0, '#4a2c5e', null, 1); c.restore();
+  c.fillStyle = '#fff4e0'; c.textAlign = 'center'; c.font = 'bold 44px system-ui,sans-serif'; c.fillText(STR.title, W / 2, 62);
+  c.font = 'bold 30px system-ui,sans-serif'; c.fillStyle = '#ffe3b8'; c.fillText(STR.postcardTitle + '  ' + (you ? you.glow : ''), W / 2, H - 28);
+  if (bannerShape) {
+    c.fillStyle = '#6b3a6e'; c.beginPath(); c.moveTo(40, 100); c.lineTo(150, 100); c.lineTo(150, 230); c.lineTo(95, 205); c.lineTo(40, 230); c.closePath(); c.fill();
+    drawShapeIcon(c, bannerShape, 50, 110, 90, 70, '#8ff0c8', '#ffd27a');
+  }
+}
+
+/* ====================================================================
+   Game shell (DOM, loop, input)
+   ==================================================================== */
+/* ====================================================================
+   Portal layer: CrazyGames SDK v3 hook points. STUBS: this build loads no SDK script (one self-contained file, no network).
+   Every call checks for window.CrazyGames.SDK at call time and does nothing when it is missing, so the game plays the same
+   everywhere. To go live, the portal's own SDK script tag is added at upload time and `await SDK.init()` runs; nothing else changes.
+   `log` keeps the calls made (used by the node tests).
+   ==================================================================== */
+const Portal = (function () {
+  const log = []; let playing = false, loading = false;
+  const sdk = () => { try { return typeof window !== 'undefined' && window.CrazyGames && window.CrazyGames.SDK || null; } catch (e) { return null; } };
+  const call = (name, fn) => { log.push(name); try { const s = sdk(); if (s) fn(s); } catch (e) { } };
+  return {
+    log, get playing() { return playing; }, get hasSdk() { return !!sdk(); },
+    loadingStart() { if (loading) return; loading = true; call('loadingStart', s => s.game.loadingStart()); },
+    loadingStop() { if (!loading) return; loading = false; call('loadingStop', s => s.game.loadingStop()); },
+    gameplayStart() { if (playing) return; playing = true; call('gameplayStart', s => s.game.gameplayStart()); },
+    gameplayStop() { if (!playing) return; playing = false; call('gameplayStop', s => s.game.gameplayStop()); },
+    /* a golden shape is a lock you are part of that is worth 16+ (Spoke, Square, Comet) or was locked at dawn (double pay) */
+    isGolden(rec, humanId) { return !!rec && rec.members.includes(humanId) && (rec.value >= 16 || rec.double); },
+    happytime() { call('happytime', s => s.game.happytime()); },
+    /* rewarded ad for the Hall of Skies banner. Without an SDK there is no ad: the earned banner is granted at once, as before.
+       With an SDK the banner is granted only after adFinished; adStarted/adFinished/adError let the game mute and pause around it. */
+    rewarded(cb) {   // cb: { started, granted, failed }
+      log.push('rewarded'); const s = sdk();
+      if (!s && !(typeof window !== 'undefined' && window.CrazyGames)) { cb.granted(); return; }   // local play only: no portal at all
+      if (!s || !s.ad || !s.ad.requestAd) { cb.failed && cb.failed(); return; }                      // on a portal without the ad API: never silently grant
+      try { s.ad.requestAd('rewarded', { adStarted: () => cb.started && cb.started(), adFinished: () => cb.granted(), adError: () => cb.failed && cb.failed() }); }
+      catch (e) { cb.failed && cb.failed(); }
+    },
+    /* private rooms do not exist yet: this only builds the link string a future room would share. Returns null without an SDK. */
+    inviteLink(roomId) { log.push('inviteLink'); try { const s = sdk(); return s && s.game && s.game.inviteLink ? s.game.inviteLink({ room: String(roomId) }) : null; } catch (e) { return null; } },
+    roomFromUrl() { try { const m = /[?&]room=([A-Za-z0-9_-]{1,24})/.exec(location.search); return m ? m[1] : null; } catch (e) { return null; } }
+  };
+})();
+if (typeof window !== 'undefined') window.addEventListener('error', () => { const t = document.getElementById('loadTxt'), l = document.getElementById('loading'); if (t && l && !l.classList.contains('off')) t.textContent = STR.loadFail; });
+if (typeof document !== 'undefined' && document.getElementById) Portal.loadingStart();
+
+if (typeof document !== 'undefined') (function boot() {
+  const $ = id => document.getElementById(id);
+  const canvas = $('c'), view = new View(canvas), rend = new Renderer(view), human = new HumanDriver(view), bots = new BotDriver();
+  let sim = null, tut = null, state = 'demo', cur = 'title', endTimer = 0, last = 0, acc = 0, toastT = 0, windTick = 0, setNo = 0;
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { } } };
+  rend.bannerShape = store.get('lanternDriftBanner');
+  if (!SHAPES[rend.bannerShape]) rend.bannerShape = null;
+  rend.sfx = Sfx;
+  /* look and night choices, kept on this device only: pattern, colour, skyline (3 = surprise), wanted set (8 = rotate nightly) */
+  const prefs = { pat: 0, col: 0, sky: 3, set: 8 };
+  try { const sv = JSON.parse(store.get('lanternDriftLook') || '{}'); for (const k in prefs) if (Number.isInteger(sv[k]) && sv[k] >= 0) prefs[k] = sv[k]; } catch (e) { }
+  prefs.pat = Math.min(prefs.pat, STR.patterns.length - 1); prefs.col = Math.min(prefs.col, PALETTE.length - 1); prefs.sky = Math.min(prefs.sky, SKYLINES.length); prefs.set = Math.min(prefs.set, SETS.length);
+  const savePrefs = () => store.set('lanternDriftLook', JSON.stringify(prefs));
+  Sfx.setMuted(store.get('lanternDriftMuted') === '1'); rend.muted = Sfx.muted;
+
+  document.querySelectorAll('[data-s]').forEach(e => { e.textContent = STR[e.dataset.s]; });
+  document.querySelectorAll('[data-i]').forEach(e => { e.innerHTML = ICONS[e.dataset.i]; });
+  { const lc = $('logo').getContext('2d'); lc.translate(120, 118); drawLantern(lc, 0, 0, 42, { tint: '#ffd166', glow: 1 }); }
+  { const lc = $('loadLogo').getContext('2d'); lc.translate(60, 58); drawLantern(lc, 0, 0, 24, { tint: '#ffd166', glow: 1 }); }
+  canvas.setAttribute('aria-label', STR.canvasLabel);
+  /* hidden buttons and a status line give screen readers and keyboard users the same controls the canvas draws */
+  const say = s => { $('a11yStatus').textContent = s; };
+  { const A = { aPause: [STR.pauseBtn, () => pauseGame()], aMute: [STR.muteBtn, () => toggleSound()], aPulse: [STR.pulse, () => state === 'play' && pressPulse()], aDim: [STR.dim, () => state === 'play' && pressDim()] };
+    for (const id in A) { $(id).textContent = A[id][0]; $(id).onclick = A[id][1]; } }
+  function syncA11y() { $('a11y').hidden = !(state === 'play'); }
+
+  function toast(s) { const t = $('toast'); t.textContent = s; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 2200); }
+  function show(id) { cur = id; for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); }
+  function newSim(humanId, opts) { sim = new Sim((Date.now() ^ (Math.random() * 1e9)) >>> 0, humanId, opts); bots.b = {}; bots.seen = -1; rend.reset(); tut = null; }
+  const pickSky = () => prefs.sky < SKYLINES.length ? prefs.sky : Math.floor(Math.random() * SKYLINES.length);
+
+  function updateSoundUI() { const s = Sfx.muted ? STR.soundOff : STR.soundOn; $('soundTxt').textContent = s; $('pauseSoundTxt').textContent = s; rend.muted = Sfx.muted; }
+  function toggleSound() { if (Sfx.muted) Sfx.init(); Sfx.setMuted(!Sfx.muted);   // audio only starts when the player turns sound ON, never while muting
+ store.set('lanternDriftMuted', Sfx.muted ? '1' : '0'); updateSoundUI(); }
+  updateSoundUI();
+
+  const TUT_KEY = 'lanternDriftTutDone';
+  /* the guide only counts as done (flag saved) when the player really reached its last step */
+  function endTut(finished) { if (finished) store.set(TUT_KEY, '1'); if (sim) sim.inviteUntil = Math.min(sim.inviteUntil, sim.t + 6); tut = null; rend.tut = null; }
+  function startGame() {
+    const guided = store.get(TUT_KEY) !== '1';
+    if (guided) setNo = 0;
+    else if (prefs.set < SETS.length) setNo = prefs.set;
+    else { const n = parseInt(store.get('lanternDriftNight'), 10) || 0; setNo = n % SETS.length; store.set('lanternDriftNight', String(n + 1)); }
+    newSim(0, { guided, set: setNo });
+    sim.players[0].tint = PALETTE[prefs.col]; sim.players[0].pat = prefs.pat;
+    rend.sky = guided && prefs.sky >= SKYLINES.length ? 0 : pickSky();
+    if (guided) { tut = new Tutorial(sim); rend.tut = tut; }
+    else rend.banner = { s: STR.tonight + ': ' + SETS[setNo].name, until: rend.now + 3.5 };
+    /* the guide keeps the mechanics fixed (its own starter cards); a chosen set is said to wait until round two */
+    if (guided && prefs.set < SETS.length) rend.banner = { s: STR.setNext, until: rend.now + 4 };
+    state = 'play'; human.keys.clear(); human.steer = null; show(''); syncA11y(); Portal.gameplayStart();
+    say(STR.aPlaying + STR.aWanted + sim.wanted.map(w => STR.shapes[w.shape]).join(', '));
+  }
+  function toMenu() { Portal.gameplayStop(); newSim(-1); rend.sky = pickSky(); state = 'demo'; show('title'); syncA11y(); }
+  function pauseGame() { if (state !== 'play') return; state = 'paused'; Sfx.tick(); Portal.gameplayStop(); human.keys.clear(); human.steer = null; updateSoundUI(); show('pause'); syncA11y(); say(STR.aPaused); }
+  function resumeGame() { if (state !== 'paused') return; state = 'play'; acc = 0; show(''); syncA11y(); Portal.gameplayStart(); }
+  function showEnd() {
+    Portal.gameplayStop(); state = 'end'; syncA11y(); const a = computeAwards(sim), you = sim.players[0], ul = $('awards'); ul.textContent = '';
+    $('finalGlow').textContent = STR.glow + ' ' + you.glow + '   ' + STR.rank + ' ' + (a.ps.indexOf(you) + 1) + '/' + a.ps.length;
+    const award = (ico, label, who) => { const d = document.createElement('div'); d.className = 'award'; d.innerHTML = '<svg class="ico" viewBox="0 0 24 24">' + ICONS[ico] + '</svg>'; const t = document.createElement('div'); const b = document.createElement('b'); b.textContent = label; const i = document.createElement('i'); i.textContent = who; t.append(b, i); d.append(t); ul.append(d); };
+    award('star3', STR.bestConstellation, a.best ? STR.shapes[a.best.shape] + ' +' + a.best.value + ' (' + a.best.members.map(i => sim.players[i].name).join(', ') + ')' : STR.none);
+    award('link', STR.bestAssist, a.assist ? a.assist.name + ' (' + a.assist.assists + ')' : STR.none);
+    award('spark', STR.mostSparks, a.sparks ? a.sparks.name + ' (' + a.sparks.sparks + ')' : STR.none);
+    const bd = $('board'); bd.textContent = '';
+    a.ps.forEach((p, i) => { if (i < 5 || p.isYou) { const d = document.createElement('div'); if (p.isYou) d.className = 'me'; const l = document.createElement('span'), r = document.createElement('span'); l.textContent = (i + 1) + '. ' + p.name; r.textContent = p.glow; d.append(l, r); bd.append(d); } });
+    $('bannerMsg').textContent = ''; $('bannerBtn').disabled = false;
+    $('tonight').textContent = STR.tonight + ': ' + sim.set.name + ' - ' + SKYLINES[rend.sky].name;
+    sim._best = you.bestShape;
+    drawPostcard($('postcard'), sim, you, rend.bannerShape, rend.sky);
+    show('end');
+  }
+  $('playBtn').onclick = startGame; $('againBtn').onclick = startGame; $('menuBtn').onclick = toMenu;
+  $('resumeBtn').onclick = resumeGame; $('quitBtn').onclick = toMenu;
+  $('soundBtn').onclick = toggleSound; $('pauseSoundBtn').onclick = toggleSound;
+  $('saveBtn').onclick = () => {
+    if (!$('postcard').toBlob) { toast(STR.saveFail); return; }
+    $('postcard').toBlob(b => {
+      if (!b) { toast(STR.saveFail); return; }                  // some browsers hand back null
+      try { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'lantern-drift-sky.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+      catch (e) { toast(STR.saveFail); }
+    });
+  };
+  /* Earned cosmetic: your best constellation of the round hangs as a banner under your lantern. No ads, no purchase. */
+  function grantBanner() {
+    if (!sim._best) { $('bannerMsg').textContent = STR.noShape; return; }
+    rend.bannerShape = sim._best; store.set('lanternDriftBanner', sim._best); $('bannerMsg').textContent = STR.bannerHung;
+    drawPostcard($('postcard'), sim, sim.players[0], rend.bannerShape, rend.sky); $('bannerBtn').disabled = true;
+  }
+  /* portal hook: with the SDK present the banner is a rewarded video (sound off while it plays); without it, granted at once */
+  let adBusy = false;
+  function bannerClick() {
+    if (!sim._best) { $('bannerMsg').textContent = STR.noShape; return; }
+    if (adBusy) return; adBusy = true;
+    Portal.rewarded({
+      started() { Sfx.suspend(true); $('bannerMsg').textContent = STR.adWait; },
+      granted() { adBusy = false; Sfx.suspend(false); grantBanner(); },
+      failed() { adBusy = false; Sfx.suspend(false); $('bannerMsg').textContent = STR.adFail; }
+    });
+  }
+  $('bannerBtn').onclick = bannerClick;
+
+  /* ---- customise screen: lantern pattern, colour, night city, wanted-shape set ---- */
+  const sels = [];                                              // [element, test] so one pass can show what is chosen
+  function chip(parent, label, cls, test, pick) {
+    const b = document.createElement('button'); b.className = cls; b.textContent = label; b.title = label; b.onclick = () => { pick(); savePrefs(); refreshCustom(); };
+    parent.append(b); sels.push([b, test]); return b;
+  }
+  function refreshCustom() {
+    for (const [el, test] of sels) el.classList.toggle('sel', !!test());
+    const pc = $('prevLantern').getContext('2d'), sk = SKYLINES[prefs.sky < SKYLINES.length ? prefs.sky : 0], w = 300, h = 330;
+    const g = pc.createLinearGradient(0, 0, 0, h); g.addColorStop(0, mix(sk.top, sk.top, 0)); g.addColorStop(1, mix(sk.bot, sk.bot, 0)); pc.setTransform(1, 0, 0, 1, 0, 0); pc.fillStyle = g; pc.fillRect(0, 0, w, h);
+    pc.save(); pc.translate(-40, h); pc.scale(.5, .5); drawCity(pc, sk.far, -30, 0, mix(sk.farN, sk.farN, 0), null, 0); drawCity(pc, sk.near, 0, 0, mix(sk.nearN, sk.nearN, 0), sk.win, 0); pc.restore();
+    pc.save(); pc.translate(w / 2, h / 2 - 20); drawLantern(pc, 0, 0, 62, { tint: PALETTE[prefs.col], pat: prefs.pat, glow: 1 }); pc.restore();
+    const names = k => SHAPES[k] ? STR.shapes[k] : k;
+    $('setInfo').textContent = prefs.set < SETS.length
+      ? SETS[prefs.set].name + ': starts with ' + SETS[prefs.set].start.map(names).join(', ') + '. Later: ' + SETS[prefs.set].more.map(names).join(', ') + '.'
+      : 'A different set each night. Every set starts with 2-3 lantern shapes.';
+    if (state === 'demo') rend.sky = pickSky();
+  }
+  STR.patterns.forEach((n, i) => chip($('patRow'), n, 'chip', () => prefs.pat === i, () => { prefs.pat = i; }));
+  PALETTE.forEach((col, i) => { const b = chip($('colRow'), '', 'chip swatch', () => prefs.col === i, () => { prefs.col = i; }); b.style.background = col; b.title = STR.colours[i]; });
+  SKYLINES.forEach((s, i) => chip($('skyRow'), s.name, 'chip', () => prefs.sky === i, () => { prefs.sky = i; }));
+  chip($('skyRow'), STR.surprise, 'chip', () => prefs.sky === SKYLINES.length, () => { prefs.sky = SKYLINES.length; });
+  SETS.forEach((s, i) => chip($('setRow'), s.name, 'chip', () => prefs.set === i, () => { prefs.set = i; }));
+  chip($('setRow'), STR.rotate, 'chip', () => prefs.set === SETS.length, () => { prefs.set = SETS.length; });
+  $('customBtn').onclick = () => { show('custom'); refreshCustom(); };
+  $('doneBtn').onclick = () => show('title');
+
+  function pressPulse() { const y = sim.players[sim.humanId]; const cd = y && y.pulseCd > 0; rend.press('pulse', cd); human.pulse = true; if (!cd) Sfx.pulse(); }
+  function pressDim() { const y = sim.players[sim.humanId]; const cd = y && (y.dimCd > 0 || y.dimT > 0); rend.press('dim', cd); human.dim = true; if (!cd) Sfx.dim(); }
+  const skipBtn = $('skipTut');
+  skipBtn.onclick = () => { Sfx.tick(); if (tut) endTut(true); skipBtn.hidden = true; };
+  for (const id of ['playBtn', 'customBtn', 'doneBtn', 'quitBtn', 'resumeBtn']) { const b = $(id); if (b) b.addEventListener('click', () => Sfx.tick()); }
+  /* input */
+  addEventListener('keydown', e => {
+    const k = e.code;                                               // physical key position, so AZERTY works; Escape is never used
+    const onBtn = e.target && e.target.tagName === 'BUTTON';        // Enter/Space on a focused button presses that button
+    if (((state === 'demo' && cur === 'title') || state === 'end') && (k === 'Enter' || k === 'NumpadEnter') && !onBtn) { e.preventDefault(); startGame(); return; }
+    if (state === 'paused') { if (k === 'KeyP' || ((k === 'Enter' || k === 'NumpadEnter') && !onBtn)) { e.preventDefault(); resumeGame(); } return; }
+    if (state === 'play' && k === 'KeyP') { e.preventDefault(); pauseGame(); return; }
+    if (state === 'play') {
+      if (k === 'Space') { pressPulse(); e.preventDefault(); } else if (k === 'KeyE' || k === 'KeyX' || k === 'ShiftLeft' || k === 'ShiftRight') pressDim();
+      else if (k.startsWith('Arrow')) e.preventDefault();
+    }
+    human.keys.add(k);
+  });
+  addEventListener('keyup', e => human.keys.delete(e.code));
+  addEventListener('blur', () => { human.keys.clear(); human.steer = null; });
+  /* browsers only allow sound after a tap or key; never start audio while muted or from the sound buttons themselves */
+  for (const ev of ['pointerdown', 'pointerup', 'keydown', 'click']) addEventListener(ev, e => { if (!Sfx.muted && !(e.target && e.target.closest && e.target.closest('#soundBtn,#pauseSoundBtn,#aMute'))) Sfx.init(); });
+  const btnPtr = new Set();
+  canvas.addEventListener('pointerdown', e => {
+    if (state === 'ending' && endTimer < 1.4) { showEnd(); return; }              // after the sunrise beat, a tap skips ahead
+    if (state !== 'play') return; canvas.setPointerCapture(e.pointerId); rend.tap(e.clientX, e.clientY);
+    const B = view.hud();
+    for (const b of [B.pause, B.mute]) if (Math.hypot(e.clientX - b.x, e.clientY - b.y) < b.r * 1.15) { if (b.k === 'pause') pauseGame(); else toggleSound(); btnPtr.add(e.pointerId); return; }
+    for (const b of [B.pulse, B.dim]) if (Math.hypot(e.clientX - b.x, e.clientY - b.y) < b.r * 1.15) { if (b.k === 'pulse') pressPulse(); else pressDim(); btnPtr.add(e.pointerId); return; }
+    human.steer = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  });
+  canvas.addEventListener('pointermove', e => { if (human.steer && human.steer.id === e.pointerId) { human.steer.x = e.clientX; human.steer.y = e.clientY; } });
+  const up = e => { btnPtr.delete(e.pointerId); if (human.steer && human.steer.id === e.pointerId) human.steer = null; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  addEventListener('resize', () => view.resize());
+
+  newSim(-1);
+  let loadingEl = $('loading');                                // hidden after the first frame is drawn
+  let raf = 0;
+  function showFirstScreen() { if (loadingEl) { loadingEl.classList.add('off'); loadingEl = null; Portal.loadingStop(); } }   // first frame, or the tab becoming visible
+  function start() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf); raf = 0; human.keys.clear(); human.steer = null;
+      if (state === 'play') pauseGame();                       // only a running round pauses; title, custom and end screens stay as they are
+      Portal.gameplayStop(); Sfx.suspend(true);
+    } else { Sfx.suspend(false); start(); }
+  });
+  function frame(ts) {
+    raf = 0;
+    const dt = Math.min(.1, (ts - last) / 1000 || 0); last = ts; acc += dt;
+    const paused = state === 'paused'; if (paused) acc = 0;
+    while (!paused && acc >= CFG.step) {                       // the sim never steps under the pause screen
+      acc -= CFG.step; const inputs = {};
+      bots.collect(sim, CFG.step, inputs); if (sim.humanId >= 0 && state === 'play') human.collect(sim, CFG.step, inputs);
+      sim.step(CFG.step, inputs);
+      if (tut) { const s0 = tut.step; tut.update(sim, !!human.steer || human.keys.size > 0); if (s0 < 2 && tut.step >= 2) rend.banner = { s: STR.nudge, until: rend.now + 4 }; if (tut.step >= 3) endTut(true); }
+      if (sim.over && state === 'play') { state = 'ending'; endTimer = 2.4; Portal.gameplayStop(); syncA11y(); if (tut) endTut(false); }
+      if (sim.over && state === 'demo') newSim(-1);
+    }
+    for (const e of sim.events) {                              // portal happytime and the screen-reader line, before the renderer clears the events
+      if (e.type === 'lock' && e.rec.members.includes(sim.humanId)) { say(STR.aLock + STR.shapes[e.rec.shape] + ' +' + e.rec.value); if (Portal.isGolden(e.rec, sim.humanId)) Portal.happytime(); }
+      else if (e.type === 'dawn' && sim.humanId >= 0) say(STR.aDawn);
+    }
+    rend.consume(sim);
+    skipBtn.hidden = !(tut && state === 'play');
+    const you = sim.players[sim.humanId];
+    if (you) view.follow(you.x, you.y, 1 - Math.exp(-5 * dt)); else view.follow(CFG.worldW / 2, CFG.worldH / 2, .05);
+    if (Sfx.ready && ++windTick % 15 === 0) {                 // wind swells when you drift through a gust
+      let lv = .25; if (you) for (const g of sim.gusts) { const d = Math.hypot(you.x - g.x, you.y - g.y); if (d < g.r) lv = Math.max(lv, 1 - d / g.r); }
+      Sfx.wind(paused ? .1 : lv);
+    }
+    rend.draw(sim, paused ? 0 : dt, state === 'demo' || state === 'end' ? 'demo' : state === 'paused' ? 'play' : state);
+    showFirstScreen();                                          // only after the first canvas frame is drawn
+    if (state === 'ending') { endTimer -= dt; if (endTimer <= 0) showEnd(); }
+    if (!(typeof document !== 'undefined' && document.hidden)) raf = requestAnimationFrame(frame);
+  }
+  raf = requestAnimationFrame(frame);
+  if (typeof module !== 'undefined') module.exports.__game = { view, rend, human, bots, frame, get sim() { return sim; }, get state() { return state; }, get tut() { return tut; }, get cur() { return cur; }, prefs, store };
+})();
+
+if (typeof module !== 'undefined') Object.assign(module.exports, { Sim, BotDriver, CFG, SHAPES, SETS, SKYLINES, Sfx, STR, matchShape, computeAwards, Tutorial, hudLayout, Portal });
+</script>
+</body>
+</html>

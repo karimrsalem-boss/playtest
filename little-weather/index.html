@@ -1,0 +1,1438 @@
+<!-- © 2026 DMK INTEGRATIONS - FZCO. All rights reserved. -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="copyright" content="© 2026 DMK INTEGRATIONS - FZCO">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Little Weather</title>
+<style>
+html,body{margin:0;height:100%;background:#fbf3e1;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+canvas{display:block;width:100vw;height:100vh;height:100dvh;outline:none;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="0" role="img" aria-label="Little Weather, a garden puzzle. The main actions are offered as buttons below; placing tiles uses the arrow keys, Enter and Space."></canvas>
+<div id="loading" role="status" style="position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#fbf3e1;color:#6b5a52;font:600 22px sans-serif;z-index:5">Little Weather… growing the garden</div>
+<script>
+'use strict';
+// ---------------------------------------------------------------- icon (drawn in code, no file)
+// A small sun peeking over a cloud on a warm sky, drawn on a canvas and used as the page icon.
+(function makeIcon() {
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const g = c.getContext('2d');
+    g.fillStyle = '#bfe3f2'; g.fillRect(0, 0, 64, 64);
+    g.fillStyle = '#ffcf4a'; g.beginPath(); g.arc(40, 24, 13, 0, 6.2832); g.fill();
+    g.fillStyle = '#ffffff';
+    g.beginPath(); g.arc(22, 42, 11, 0, 6.2832); g.arc(34, 38, 13, 0, 6.2832); g.arc(46, 43, 10, 0, 6.2832); g.fill();
+    g.fillRect(14, 42, 40, 11);
+    const l = document.createElement('link'); l.rel = 'icon'; l.href = c.toDataURL('image/png');
+    document.head.appendChild(l);
+  } catch (e) { /* icon is optional */ }
+})();
+// ---------------------------------------------------------------- portal hooks (stubs)
+// CrazyGames SDK v3 hook points. The SDK is NOT bundled and nothing is loaded from the network: each call
+// uses window.CrazyGames.SDK only if a portal wrapper has already put it on the page, and otherwise does nothing.
+const portal = {
+  adsEnabled: false, // stays false until a portal build wires a real portal reward
+  sdk() { try { return (window.CrazyGames && window.CrazyGames.SDK) || null; } catch (e) { return null; } },
+  call(fn) { try { const s = this.sdk(); if (s) fn(s); } catch (e) { /* a portal error must never stop the game */ } },
+  playing: false,
+  loadingStart() { this.call(s => s.game.loadingStart()); },
+  loadingStop() { this.call(s => s.game.loadingStop()); },
+  gameplayStart() { if (this.playing) return; this.playing = true; this.call(s => s.game.gameplayStart()); },
+  gameplayStop() { if (!this.playing) return; this.playing = false; this.call(s => s.game.gameplayStop()); },
+  happytime() { this.call(s => s.game.happytime()); },
+  // "Dream of tomorrow" hint. Without a wired ad it is simply granted, as before (no ad, no reward gating).
+  rewarded(onGranted, onFail) {
+    const s = this.sdk();
+    if (!this.adsEnabled || !s) { onGranted(); return; }
+    let done = false;
+    const grant = () => { if (!done) { done = true; this.gameplayStart(); onGranted(); } };
+    try {
+      this.gameplayStop();
+      s.ad.requestAd('rewarded', { adFinished: grant, adError: () => { if (!done) { done = true; this.gameplayStart(); if (onFail) onFail(); } }, adStarted: () => {} });
+    } catch (e) { grant(); }
+  }
+};
+portal.loadingStart();
+// ---------------------------------------------------------------- strings
+const STR = {
+  title: 'Little Weather',
+  play: 'Play',
+  levels: 'Levels',
+  daily: 'Daily',
+  hint: 'Show a hint',
+  tomorrow: 'Come back tomorrow',
+  start: 'Start'
+};
+
+//#core-start
+// ---------------------------------------------------------------- core rules
+// Tiles: 0 rain, 1 sun, 2 breeze, 3 frost.
+// Cells: 0 empty, 1 stone, 2 puddle, 3 ice, seed = 4 + stage*2 + wet (stage 0..3).
+// A day: breeze, then rain, then sun, then frost. Each tile acts on the first
+// thing found going down its column. Two tiles fit above each column.
+const RAIN = 0, SUN = 1, BREEZE = 2, FROST = 3;
+const PHASE = [BREEZE, RAIN, SUN, FROST];
+const NLEVELS = 60, PER_SEASON = 20;
+
+function firstRow(g, cols, rows, c) {
+  for (let r = 0; r < rows; r++) if (g[r * cols + c]) return r;
+  return -1;
+}
+function applyTile(g, cols, rows, t, c) {
+  const r = firstRow(g, cols, rows, c);
+  if (r < 0) return -1;
+  const i = r * cols + c, v = g[i];
+  if (t === RAIN) {
+    if (v >= 4) g[i] = v | 1;
+  } else if (t === SUN) {
+    if (v >= 4) { if (v & 1) g[i] = 4 + (Math.min(3, ((v - 4) >> 1) + 1) << 1); }
+    else if (v === 2) g[i] = 0;
+    else if (v === 3) g[i] = 2;
+  } else if (t === BREEZE) {
+    if (v !== 3 && c + 1 < cols && !g[i + 1]) { g[i + 1] = v; g[i] = 0; }
+  } else if (t === FROST) {
+    if (v === 2) g[i] = 3;
+  }
+  return r;
+}
+// placed: array per column of tile types (order inside a column does not matter)
+function sim(cols, rows, g0, placed, rec) {
+  const g = g0.slice();
+  for (const ph of PHASE) for (let c = 0; c < cols; c++) {
+    const col = placed[c];
+    if (!col) continue;
+    for (const t of col) if (t === ph) {
+      const r = applyTile(g, cols, rows, t, c);
+      if (rec) rec.push({ t, c, r, g: g.slice() });
+    }
+  }
+  return g;
+}
+function same(a, b) {
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+const OPTS = [[]];
+for (let a = 0; a < 4; a++) OPTS.push([a]);
+for (let a = 0; a < 4; a++) for (let b = a; b < 4; b++) OPTS.push([a, b]);
+
+// Smallest set of tiles (within the inventory) that reaches the target.
+// start = known solution so the search only looks for something smaller.
+function solve(L, inv, start) {
+  const cols = L.cols, rows = L.rows;
+  let best = start.reduce((n, a) => n + a.length, 0), bestP = start;
+  const cnt = inv.slice(), cur = [];
+  let nodes = 0;
+  (function dfs(c, used) {
+    if (nodes > 250000) return;
+    if (c === cols) {
+      nodes++;
+      if (used > 0 && used < best && same(sim(cols, rows, L.grid, cur), L.target)) {
+        best = used; bestP = cur.map(x => x.slice());
+      }
+      return;
+    }
+    for (const o of OPTS) {
+      if (used + o.length >= best) continue;
+      let ok = true;
+      for (const t of o) cnt[t]--;
+      for (const t of o) if (cnt[t] < 0) ok = false;
+      if (ok) { cur[c] = o; dfs(c + 1, used + o.length); }
+      for (const t of o) cnt[t]++;
+    }
+    cur[c] = [];
+  })(0, 0);
+  return { n: best, placed: bestP };
+}
+
+function mulberry(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function toSlots(placed, cols) {
+  const s = [];
+  for (let c = 0; c < cols; c++) { const p = placed[c] || []; s.push([p[0] === undefined ? -1 : p[0], p[1] === undefined ? -1 : p[1]]); }
+  return s;
+}
+function authored(cols, rows, items, sol, inv) {
+  const g = new Array(cols * rows).fill(0);
+  items.forEach(([r, c, v]) => { g[r * cols + c] = v; });
+  const placed = []; for (let c = 0; c < cols; c++) placed.push(sol[c] || []);
+  const target = sim(cols, rows, g, placed);
+  const par = placed.reduce((n, a) => n + a.length, 0);
+  return { cols, rows, grid: g, target, inv, par, sol: toSlots(placed, cols), demo: true };
+}
+// Random garden from a seed; the target is made by playing a secret set of tiles,
+// so every garden can be solved. The par is the smallest solution the solver finds.
+function build(P, seed) {
+  const rnd = mulberry(seed), ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const { cols, rows, types, k } = P;
+  let best = null, any = null;
+  for (let att = 0; att < 80; att++) {
+    const g = new Array(cols * rows).fill(0);
+    const cells = [...Array(cols * rows).keys()];
+    for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+    let p = 0;
+    for (let i = 0; i < P.seeds; i++) g[cells[p++]] = rnd() < 0.25 ? 5 : 4;
+    for (let i = 0; i < P.stones; i++) g[cells[p++]] = 1;
+    for (let i = 0; i < P.puddles; i++) g[cells[p++]] = 2;
+    for (let i = 0; i < P.ices; i++) g[cells[p++]] = 3;
+    const tiles = [];
+    for (let i = 0; i < k; i++) tiles.push(types[ri(0, types.length - 1)]);
+    if (P.must !== null && P.must !== undefined && !tiles.includes(P.must)) tiles[0] = P.must;
+    const placed = Array.from({ length: cols }, () => []);
+    for (const t of tiles) {
+      const open = []; for (let c = 0; c < cols; c++) if (placed[c].length < 2) open.push(c);
+      placed[open[ri(0, open.length - 1)]].push(t);
+    }
+    const target = sim(cols, rows, g, placed);
+    if (same(target, g)) continue;
+    const inv = [0, 0, 0, 0];
+    tiles.forEach(t => inv[t]++);
+    if (P.decoy && rnd() < 0.7) inv[types[ri(0, types.length - 1)]]++;
+    const L = { cols, rows, grid: g, target, inv };
+    const s = solve(L, inv, placed);
+    L.par = s.n; L.sol = toSlots(s.placed, cols); L.demo = false;
+    const usesMust = P.must === null || P.must === undefined || s.placed.some(a => a.includes(P.must));
+    if (usesMust && (!best || s.n > best.par)) best = L;
+    if (usesMust && s.n >= (P.minPar || Math.max(2, k - 1))) return L;
+    if (!any) any = L;
+  }
+  return best || any;
+}
+function paramsFor(i) {
+  const s = Math.floor(i / PER_SEASON), j = i % PER_SEASON;
+  const rnd = mulberry(i * 31 + 7), ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const types = s === 0 ? [RAIN, SUN] : s === 1 ? [RAIN, SUN, BREEZE] : [RAIN, SUN, BREEZE, FROST];
+  const cols = s === 0 ? (j < 6 ? 3 : j < 14 ? 4 : 5) : s === 1 ? (j < 8 ? 4 : 5) : 5;
+  const rows = s === 0 ? 3 : 4;
+  // v3 balance: the smallest par a level may have, by season and place in the season (was: par 1-2 turned up in season 3)
+  const minPar = s === 0 ? (j < 6 ? 2 : j < 12 ? 3 : 4) : s === 1 ? (j < 5 ? 3 : 4) : (j < 6 ? 4 : 5);
+  const k = Math.min(8, minPar + 2);
+  return {
+    cols, rows, types, k, minPar,
+    seeds: Math.min(3, 1 + Math.floor(j / 8) + ri(0, 1)),
+    stones: s === 0 ? (j >= 4 ? ri(0, 1) : 0) : 1 + ri(0, 1),
+    puddles: j >= 3 || s > 0 ? ri(0, 1) + (s > 0 ? 0 : 0) : 0,
+    ices: s === 2 ? ri(0, 1) : 0,
+    must: s > 0 && j === 1 ? types[types.length - 1] : null,
+    decoy: j >= 6
+  };
+}
+function makeLevel(i) {
+  const W_ = 5, B = 6, E = 5; // wet seed code is 5
+  switch (i) {
+    case 0: return authored(3, 3, [[2, 1, 4]], { 1: [RAIN] }, [1, 0, 0, 0]);
+    case 1: return authored(3, 3, [[2, 0, 4], [2, 2, 4]], { 0: [RAIN, SUN], 2: [RAIN] }, [2, 1, 0, 0]);
+    case 2: return authored(3, 3, [[2, 0, E]], { 0: [BREEZE], 1: [SUN] }, [0, 1, 1, 0]);
+    case 20: return authored(4, 4, [[3, 0, E], [3, 3, 1]], { 0: [BREEZE], 1: [SUN] }, [0, 1, 1, 0]);
+    case 40: return authored(5, 4, [[3, 1, 2], [3, 3, E]], { 1: [FROST], 3: [SUN] }, [0, 1, 0, 1]);
+  }
+  for (let n = 0; ; n++) { const L = build(paramsFor(i), i * 7919 + 13 + n * 101); if (L) return L; }
+}
+function dailySeed(dateStr) { return parseInt(dateStr, 10); }
+function makeDaily(dateStr) {
+  const seed = dailySeed(dateStr), rnd = mulberry(seed), ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const P = { cols: 5, rows: 4, types: [RAIN, SUN, BREEZE, FROST], k: ri(4, 5), seeds: ri(2, 3), stones: ri(1, 2), puddles: ri(0, 1), ices: ri(0, 1), must: null, decoy: true };
+  for (let n = 0; ; n++) { const L = build(P, seed + n * 101); if (L) return L; }
+}
+//#core-end
+
+// ---------------------------------------------------------------- save
+const KEY = 'little-weather-v1';
+let save = { unlocked: 0, stars: {}, daily: { date: '', stars: 0, tries: 3, extra: false }, mute: false, tut: {} };
+function loadSave() {
+  try {
+    const s = localStorage.getItem(KEY);
+    if (s) {
+      const o = JSON.parse(s);
+      if (o && typeof o === 'object') {
+        if (Number.isFinite(o.unlocked)) save.unlocked = Math.max(0, Math.min(NLEVELS - 1, o.unlocked | 0));
+        if (o.stars && typeof o.stars === 'object') save.stars = o.stars;
+        if (o.daily && typeof o.daily === 'object') save.daily = Object.assign(save.daily, o.daily);
+        save.mute = !!o.mute;
+        if (o.tut && typeof o.tut === 'object') save.tut = o.tut;
+      }
+    }
+  } catch (e) { /* storage unavailable: play without saving */ }
+}
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } }
+function todayStr() { const d = new Date(); return String(d.getFullYear()) + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); } // the player's local day
+loadSave();
+
+// ---------------------------------------------------------------- canvas
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, paper = null, paperSeason = -1, crect = null;
+function resize() {
+  DPR = Math.min(2.5, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  paper = null; crect = null;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const INK = '#6b5a52', CREAM = '#fbf3e1';
+const PET = ['#ffb3c1', '#ffd6a5', '#d7b8f3', '#b5e2fa', '#fff1a8'];
+const TCOL = ['#d6ecfa', '#fff0b8', '#d9f3e8', '#e3efff'];
+const SEASON_COL = ['#d9efc8', '#ffe9b5', '#f7cfd8'];
+const SEASON_PAPER = ['#f5f4dd', '#fdeed0', '#f6ebee'], GARDEN_COL = ['#cfe8bf', '#e6e3b0', '#d9e3ee'];
+// the season of the screen being shown: levels 1-20 spring rain, 21-40 summer breeze, 41-60 frost; the daily is a summer day
+function curSeason() {
+  if (screen === 'level' && lv) return lv.kind === 'level' ? Math.floor(lv.index / PER_SEASON) : 1;
+  if (screen === 'map') return mapSeason;
+  return Math.min(2, Math.floor(save.unlocked / PER_SEASON));
+}
+
+function makePaper(season) {
+  const p = document.createElement('canvas');
+  p.width = Math.max(1, Math.round(W * DPR)); p.height = Math.max(1, Math.round(H * DPR));
+  const x = p.getContext('2d');
+  x.scale(DPR, DPR);
+  x.fillStyle = SEASON_PAPER[season] || CREAM; x.fillRect(0, 0, W, H);
+  const r = mulberry(5 + season);
+  for (let i = 0; i < 26; i++) { // season art: petals, warm light dots, snow
+    const px = r() * W, py = r() * H, sz = 4 + r() * 7;
+    if (season === 0) { x.fillStyle = 'rgba(255,179,193,0.30)'; x.beginPath(); x.ellipse(px, py, sz, sz * 0.55, r() * 3, 0, 7); x.fill(); }
+    else if (season === 1) { x.fillStyle = 'rgba(255,214,120,0.28)'; x.beginPath(); x.arc(px, py, sz * 0.8, 0, 7); x.fill(); }
+    else { x.fillStyle = 'rgba(255,255,255,0.75)'; x.beginPath(); x.arc(px, py, sz * 0.5, 0, 7); x.fill(); x.strokeStyle = 'rgba(156,195,238,0.35)'; x.lineWidth = 1; x.stroke(); }
+  }
+  for (let i = 0; i < 260; i++) {
+    x.fillStyle = 'rgba(190,160,120,' + (0.03 + r() * 0.05) + ')';
+    x.beginPath(); x.arc(r() * W, r() * H, 0.6 + r() * 1.6, 0, 7); x.fill();
+  }
+  const g = x.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.4, W / 2, H / 2, Math.max(W, H) * 0.8);
+  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(230,200,160,0.35)');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  return p;
+}
+
+// ---------------------------------------------------------------- draw helpers
+function rr(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function circ(x, y, r, fill, stroke, lw) {
+  ctx.beginPath(); ctx.arc(x, y, Math.max(0, r), 0, 7);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 2; ctx.stroke(); }
+}
+function ell(x, y, rx, ry, fill, rot) {
+  ctx.beginPath(); ctx.ellipse(x, y, Math.max(0, rx), Math.max(0, ry), rot || 0, 0, 7);
+  ctx.fillStyle = fill; ctx.fill();
+}
+function text(t, x, y, size, col, align, weight) {
+  ctx.font = (weight || '700') + ' ' + size + 'px "Trebuchet MS","Segoe UI",system-ui,sans-serif';
+  ctx.fillStyle = col || INK; ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(t, x, y);
+}
+function line(pts, col, w) {
+  ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+  ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+}
+function star(x, y, r, lit, pop) {
+  const s = r * (pop || 1);
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? s * 0.48 : s;
+    ctx.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+  }
+  ctx.closePath();
+  ctx.fillStyle = lit ? '#ffd24d' : 'rgba(180,165,150,0.35)'; ctx.fill();
+  ctx.lineJoin = 'round'; ctx.strokeStyle = lit ? '#e8a93a' : 'rgba(150,135,120,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+}
+function cloud(x, y, s, col) {
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.arc(x - s * 0.22, y, s * 0.2, 0, 7); ctx.arc(x + s * 0.05, y - s * 0.1, s * 0.25, 0, 7); ctx.arc(x + s * 0.3, y, s * 0.18, 0, 7); ctx.fill();
+  rr(x - s * 0.42, y - s * 0.02, s * 0.9, s * 0.2, s * 0.1); ctx.fill();
+}
+
+function drawTile(t, x, y, s, time, alpha, bg) {
+  ctx.save(); ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+  if (bg !== false) {
+    rr(x, y, s, s, s * 0.24); ctx.fillStyle = TCOL[t]; ctx.fill();
+    ctx.strokeStyle = 'rgba(107,90,82,0.35)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+  const cx = x + s / 2, cy = y + s / 2;
+  if (t === SUN) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(time * 0.6);
+    for (let i = 0; i < 8; i++) { ctx.rotate(Math.PI / 4); line([[s * 0.27, 0], [s * 0.38, 0]], '#ffc94a', s * 0.06); }
+    ctx.restore();
+    circ(cx, cy, s * 0.21, '#ffd96b', '#f2b43c', 2);
+    circ(cx - s * 0.07, cy - s * 0.03, s * 0.025, INK); circ(cx + s * 0.07, cy - s * 0.03, s * 0.025, INK);
+    ctx.beginPath(); ctx.arc(cx, cy + s * 0.01, s * 0.07, 0.2, Math.PI - 0.2); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke();
+  } else if (t === RAIN) {
+    cloud(cx, cy - s * 0.12, s * 0.9, '#ffffff');
+    for (let i = 0; i < 3; i++) {
+      const k = (time * 0.9 + i / 3) % 1, dx = cx + (i - 1) * s * 0.2, dy = cy + s * 0.05 + k * s * 0.3;
+      ctx.globalAlpha = (alpha === undefined ? 1 : alpha) * (1 - k * 0.7);
+      ell(dx, dy, s * 0.035, s * 0.06, '#6fb7e6');
+    }
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+  } else if (t === BREEZE) {
+    for (let i = 0; i < 3; i++) {
+      const yy = cy + (i - 1) * s * 0.2, sh = Math.sin(time * 2.2 + i) * s * 0.04;
+      ctx.beginPath(); ctx.moveTo(cx - s * 0.32 + sh, yy);
+      ctx.bezierCurveTo(cx - s * 0.1, yy - s * 0.1, cx + s * 0.1, yy + s * 0.1, cx + s * 0.28 + sh, yy - s * 0.02);
+      ctx.strokeStyle = '#7fcab0'; ctx.lineWidth = s * 0.05; ctx.lineCap = 'round'; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(cx + s * 0.28, cy - s * 0.02 - s * 0.05, s * 0.05, Math.PI * 0.5, Math.PI * 2); ctx.strokeStyle = '#7fcab0'; ctx.lineWidth = s * 0.04; ctx.stroke();
+  } else if (t === FROST) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.sin(time) * 0.2);
+    for (let i = 0; i < 6; i++) {
+      ctx.rotate(Math.PI / 3);
+      line([[0, 0], [s * 0.3, 0]], '#8fb8ee', s * 0.05);
+      line([[s * 0.18, 0], [s * 0.26, s * 0.08]], '#8fb8ee', s * 0.035);
+      line([[s * 0.18, 0], [s * 0.26, -s * 0.08]], '#8fb8ee', s * 0.035);
+    }
+    ctx.restore();
+    circ(cx, cy, s * 0.05, '#ffffff');
+  }
+  ctx.restore();
+}
+
+function drawSeed(stage, wet, cx, cy, s, t, idx) {
+  const gy = cy + s * 0.26, sway = Math.sin(t * 1.6 + idx) * s * 0.02;
+  ell(cx, gy, s * 0.22, s * 0.05, 'rgba(120,90,60,0.18)');
+  if (stage === 0) {
+    ell(cx, cy + s * 0.1, s * 0.2, s * 0.16, '#cb9a6c');
+    ell(cx - s * 0.05, cy + s * 0.03, s * 0.06, s * 0.04, 'rgba(255,255,255,0.35)');
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(cx - s * 0.06, cy + s * 0.1, s * 0.035, 0.1, Math.PI - 0.1); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + s * 0.06, cy + s * 0.1, s * 0.035, 0.1, Math.PI - 0.1); ctx.stroke();
+    circ(cx - s * 0.12, cy + s * 0.16, s * 0.025, 'rgba(255,150,160,0.6)'); circ(cx + s * 0.12, cy + s * 0.16, s * 0.025, 'rgba(255,150,160,0.6)');
+  } else {
+    const top = stage === 1 ? cy + s * 0.0 : stage === 2 ? cy - s * 0.1 : cy - s * 0.1;
+    line([[cx, gy], [cx + sway, top]], '#7fc47a', s * 0.045);
+    ell(cx - s * 0.1 + sway, (gy + top) / 2 + s * 0.03, s * 0.1, s * 0.045, '#9fd88f', -0.5);
+    ell(cx + s * 0.1 + sway, (gy + top) / 2 - s * 0.02, s * 0.1, s * 0.045, '#9fd88f', 0.5);
+    if (stage === 1) {
+      ell(cx - s * 0.06 + sway, top - s * 0.02, s * 0.07, s * 0.035, '#b6e6a4', -0.6);
+      ell(cx + s * 0.06 + sway, top - s * 0.02, s * 0.07, s * 0.035, '#b6e6a4', 0.6);
+    } else if (stage === 2) {
+      ell(cx + sway, top - s * 0.06, s * 0.09, s * 0.12, PET[idx % 5]);
+      ell(cx + sway, top - s * 0.15, s * 0.03, s * 0.04, PET[idx % 5]);
+      ctx.strokeStyle = 'rgba(107,90,82,0.4)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(cx + sway, top - s * 0.17); ctx.lineTo(cx + sway, top + s * 0.03); ctx.stroke();
+    } else {
+      const fx = cx + sway, fy = top - s * 0.04;
+      for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + t * 0.2; circ(fx + Math.cos(a) * s * 0.13, fy + Math.sin(a) * s * 0.13, s * 0.09, PET[idx % 5], 'rgba(107,90,82,0.25)', 1); }
+      circ(fx, fy, s * 0.1, '#ffe27a', 'rgba(107,90,82,0.3)', 1);
+      circ(fx - s * 0.035, fy - s * 0.01, s * 0.015, INK); circ(fx + s * 0.035, fy - s * 0.01, s * 0.015, INK);
+      ctx.beginPath(); ctx.arc(fx, fy + s * 0.015, s * 0.035, 0.2, Math.PI - 0.2); ctx.strokeStyle = INK; ctx.lineWidth = 1.2; ctx.stroke();
+    }
+  }
+  if (wet) {
+    for (let i = 0; i < 3; i++) {
+      const dx = cx + (i - 1) * s * 0.24, dy = cy - s * 0.3 + Math.sin(t * 2 + i) * s * 0.02 + (i === 1 ? -s * 0.04 : 0);
+      ctx.beginPath(); ctx.moveTo(dx, dy - s * 0.07); ctx.quadraticCurveTo(dx + s * 0.06, dy + s * 0.01, dx, dy + s * 0.04); ctx.quadraticCurveTo(dx - s * 0.06, dy + s * 0.01, dx, dy - s * 0.07);
+      ctx.fillStyle = '#7cc0ee'; ctx.fill();
+    }
+  }
+}
+function drawItem(v, cx, cy, s, t, idx) {
+  if (v === 1) {
+    ell(cx, cy + s * 0.22, s * 0.3, s * 0.06, 'rgba(120,90,60,0.18)');
+    ctx.beginPath(); ctx.moveTo(cx - s * 0.3, cy + s * 0.2);
+    ctx.bezierCurveTo(cx - s * 0.34, cy - s * 0.12, cx - s * 0.1, cy - s * 0.3, cx + s * 0.1, cy - s * 0.24);
+    ctx.bezierCurveTo(cx + s * 0.34, cy - s * 0.18, cx + s * 0.36, cy + s * 0.12, cx + s * 0.3, cy + s * 0.2); ctx.closePath();
+    ctx.fillStyle = '#bdb6cc'; ctx.fill(); ctx.strokeStyle = 'rgba(107,90,82,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+    ell(cx - s * 0.1, cy - s * 0.1, s * 0.08, s * 0.04, 'rgba(255,255,255,0.5)', -0.5);
+  } else if (v === 2) {
+    ell(cx, cy + s * 0.1, s * 0.34, s * 0.2, '#a8d8f0');
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 2;
+    const k = (t * 0.5) % 1;
+    ctx.globalAlpha = 1 - k; ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.1, s * 0.08 + k * s * 0.2, s * 0.05 + k * s * 0.1, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+    ell(cx - s * 0.1, cy + s * 0.04, s * 0.06, s * 0.025, 'rgba(255,255,255,0.7)');
+  } else if (v === 3) {
+    rr(cx - s * 0.3, cy - s * 0.2, s * 0.6, s * 0.46, s * 0.1); ctx.fillStyle = 'rgba(190,230,250,0.95)'; ctx.fill();
+    ctx.strokeStyle = '#8fc3e6'; ctx.lineWidth = 2; ctx.stroke();
+    line([[cx - s * 0.18, cy - s * 0.1], [cx - s * 0.05, cy - s * 0.1]], '#fff', 3);
+    line([[cx - s * 0.18, cy - s * 0.02], [cx - s * 0.18, cy + s * 0.06]], '#fff', 3);
+  } else if (v >= 4) drawSeed((v - 4) >> 1, v & 1, cx, cy, s, t, idx);
+}
+
+function rooster(x, y, r, t, open, blink) {
+  ctx.save(); ctx.translate(x, y + Math.sin(t * 2) * r * 0.03);
+  const tc = ['#ffb3c1', '#ffd6a5', '#b5e2fa'];
+  for (let i = 0; i < 3; i++) ell(-r * 0.85, -r * 0.35 + i * r * 0.05, r * 0.5, r * 0.18, tc[i], -0.9 + i * 0.5);
+  line([[-r * 0.25, r * 0.95], [-r * 0.25, r * 1.2]], '#f0a35e', r * 0.07);
+  line([[r * 0.2, r * 0.95], [r * 0.2, r * 1.2]], '#f0a35e', r * 0.07);
+  circ(0, 0, r, '#fff1d6', 'rgba(107,90,82,0.5)', 2.5);
+  circ(-r * 0.2, -r * 1.0, r * 0.16, '#ff9aa8'); circ(0, -r * 1.1, r * 0.18, '#ff9aa8'); circ(r * 0.2, -r * 1.0, r * 0.16, '#ff9aa8');
+  ell(-r * 0.2, r * 0.18, r * 0.44, r * 0.3, '#ffd6a5', 0.3);
+  circ(r * 0.5, r * 0.22, r * 0.11, '#ff9aa8');
+  if (open) {
+    ctx.fillStyle = '#ffb347'; ctx.beginPath(); ctx.moveTo(r * 0.85, -r * 0.18); ctx.lineTo(r * 1.35, -r * 0.3); ctx.lineTo(r * 0.9, -r * 0.05); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(r * 0.9, -r * 0.02); ctx.lineTo(r * 1.3, r * 0.15); ctx.lineTo(r * 0.85, r * 0.12); ctx.fill();
+  } else {
+    ctx.fillStyle = '#ffb347'; ctx.beginPath(); ctx.moveTo(r * 0.85, -r * 0.2); ctx.lineTo(r * 1.32, -r * 0.05); ctx.lineTo(r * 0.85, r * 0.12); ctx.fill();
+  }
+  if (blink) { ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(r * 0.35, -r * 0.25, r * 0.08, 0.1, Math.PI - 0.1); ctx.stroke(); }
+  else { circ(r * 0.35, -r * 0.25, r * 0.08, INK); circ(r * 0.37, -r * 0.28, r * 0.025, '#fff'); }
+  circ(r * 0.52, -r * 0.08, r * 0.07, 'rgba(255,140,160,0.45)');
+  ctx.restore();
+}
+function owl(x, y, r, t) {
+  ctx.save(); ctx.translate(x, y + Math.sin(t * 1.2) * r * 0.02);
+  ctx.fillStyle = '#cdb8f0';
+  ctx.beginPath(); ctx.moveTo(-r * 0.75, -r * 0.7); ctx.lineTo(-r * 0.45, -r * 1.1); ctx.lineTo(-r * 0.15, -r * 0.8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(r * 0.75, -r * 0.7); ctx.lineTo(r * 0.45, -r * 1.1); ctx.lineTo(r * 0.15, -r * 0.8); ctx.fill();
+  ell(0, 0, r * 0.9, r, '#cdb8f0'); ctx.strokeStyle = 'rgba(107,90,82,0.45)'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.ellipse(0, 0, r * 0.9, r, 0, 0, 7); ctx.stroke();
+  ell(0, r * 0.3, r * 0.55, r * 0.6, '#efe3ff');
+  ell(-r * 0.8, r * 0.1, r * 0.2, r * 0.5, '#b79ee0', 0.2); ell(r * 0.8, r * 0.1, r * 0.2, r * 0.5, '#b79ee0', -0.2);
+  ctx.strokeStyle = INK; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.arc(-r * 0.32, -r * 0.3, r * 0.17, 0.15, Math.PI - 0.15); ctx.stroke();
+  ctx.beginPath(); ctx.arc(r * 0.32, -r * 0.3, r * 0.17, 0.15, Math.PI - 0.15); ctx.stroke();
+  ctx.fillStyle = '#ffc77a'; ctx.beginPath(); ctx.moveTo(-r * 0.09, -r * 0.1); ctx.lineTo(r * 0.09, -r * 0.1); ctx.lineTo(0, r * 0.08); ctx.fill();
+  circ(-r * 0.55, -r * 0.05, r * 0.07, 'rgba(255,150,170,0.5)'); circ(r * 0.55, -r * 0.05, r * 0.07, 'rgba(255,150,170,0.5)');
+  ctx.restore();
+  ctx.fillStyle = 'rgba(107,90,82,0.5)'; ctx.font = '700 ' + r * 0.35 + 'px sans-serif'; ctx.textAlign = 'left';
+  const o = (t * 0.4) % 1;
+  ctx.globalAlpha = 1 - o; ctx.fillText('z', x + r * 0.9, y - r * 0.8 - o * r * 0.3); ctx.globalAlpha = 1;
+}
+function lantern(x, y, s, lit, t) {
+  if (lit) {
+    const g = ctx.createRadialGradient(x, y, s * 0.1, x, y, s * (1.0 + 0.08 * Math.sin(t * 2)));
+    g.addColorStop(0, 'rgba(255,222,130,0.8)'); g.addColorStop(1, 'rgba(255,222,130,0)');
+    ctx.fillStyle = g; ctx.fillRect(x - s * 1.2, y - s * 1.2, s * 2.4, s * 2.4);
+  }
+  line([[x, y - s * 0.55], [x, y - s * 0.36]], 'rgba(107,90,82,0.6)', 2);
+  rr(x - s * 0.18, y - s * 0.38, s * 0.36, s * 0.1, s * 0.04); ctx.fillStyle = lit ? '#d9a35b' : '#b9afc2'; ctx.fill();
+  rr(x - s * 0.28, y - s * 0.3, s * 0.56, s * 0.6, s * 0.22); ctx.fillStyle = lit ? '#ffe08a' : '#d9d2e0'; ctx.fill();
+  ctx.strokeStyle = lit ? '#e0a948' : 'rgba(107,90,82,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+  rr(x - s * 0.18, y + s * 0.28, s * 0.36, s * 0.08, s * 0.04); ctx.fillStyle = lit ? '#d9a35b' : '#b9afc2'; ctx.fill();
+}
+
+// icons for buttons (all drawn at center x,y, size s)
+function icon(kind, x, y, s, col) {
+  col = col || INK; ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = s * 0.1; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (kind === 'back') { line([[x + s * 0.12, y - s * 0.28], [x - s * 0.16, y], [x + s * 0.12, y + s * 0.28]], col, s * 0.1); }
+  else if (kind === 'next' || kind === 'play') { ctx.beginPath(); ctx.moveTo(x - s * 0.18, y - s * 0.3); ctx.lineTo(x + s * 0.3, y); ctx.lineTo(x - s * 0.18, y + s * 0.3); ctx.closePath(); ctx.fill(); }
+  else if (kind === 'replay') { ctx.beginPath(); ctx.arc(x, y, s * 0.26, -2.2, 3.6); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x - s * 0.3, y - s * 0.42); ctx.lineTo(x - s * 0.1, y - s * 0.3); ctx.lineTo(x - s * 0.34, y - s * 0.16); ctx.closePath(); ctx.fill(); }
+  else if (kind === 'map') { for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) circ(x + (i - 1) * s * 0.26, y + (j - 1) * s * 0.26, s * 0.07, col); }
+  else if (kind === 'home') { ctx.beginPath(); ctx.moveTo(x - s * 0.3, y); ctx.lineTo(x, y - s * 0.3); ctx.lineTo(x + s * 0.3, y); ctx.stroke(); rr(x - s * 0.2, y, s * 0.4, s * 0.28, s * 0.05); ctx.stroke(); }
+  else if (kind === 'sound' || kind === 'mute') {
+    ctx.beginPath(); ctx.moveTo(x - s * 0.3, y - s * 0.1); ctx.lineTo(x - s * 0.14, y - s * 0.1); ctx.lineTo(x + s * 0.05, y - s * 0.26); ctx.lineTo(x + s * 0.05, y + s * 0.26); ctx.lineTo(x - s * 0.14, y + s * 0.1); ctx.lineTo(x - s * 0.3, y + s * 0.1); ctx.closePath(); ctx.fill();
+    if (kind === 'sound') { ctx.beginPath(); ctx.arc(x + s * 0.05, y, s * 0.2, -0.9, 0.9); ctx.stroke(); ctx.beginPath(); ctx.arc(x + s * 0.05, y, s * 0.34, -0.9, 0.9); ctx.stroke(); }
+    else line([[x + s * 0.18, y - s * 0.16], [x + s * 0.4, y + s * 0.16]], col, s * 0.1);
+  }
+  else if (kind === 'moon') { ctx.beginPath(); ctx.arc(x, y, s * 0.28, 0.5, Math.PI * 2 - 0.5); ctx.arc(x + s * 0.14, y - s * 0.05, s * 0.22, Math.PI * 2 - 0.9, 0.9, true); ctx.closePath(); ctx.fill(); }
+  else if (kind === 'skip') { for (let i = 0; i < 2; i++) { ctx.beginPath(); ctx.moveTo(x - s * 0.3 + i * s * 0.28, y - s * 0.24); ctx.lineTo(x - s * 0.06 + i * s * 0.28, y); ctx.lineTo(x - s * 0.3 + i * s * 0.28, y + s * 0.24); ctx.closePath(); ctx.fill(); } }
+  else if (kind === 'help') text('?', x, y + s * 0.02, s * 0.6, col, 'center', '800');
+  else if (kind === 'zoom') { circ(x - s * 0.06, y - s * 0.06, s * 0.2, null, col, s * 0.09); line([[x + s * 0.09, y + s * 0.09], [x + s * 0.3, y + s * 0.3]], col, s * 0.12); }
+  else if (kind === 'close') { line([[x - s * 0.22, y - s * 0.22], [x + s * 0.22, y + s * 0.22]], col, s * 0.12); line([[x + s * 0.22, y - s * 0.22], [x - s * 0.22, y + s * 0.22]], col, s * 0.12); }
+  else if (kind === 'daily') { circ(x, y, s * 0.18, null, col, s * 0.09); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; line([[x + Math.cos(a) * s * 0.28, y + Math.sin(a) * s * 0.28], [x + Math.cos(a) * s * 0.38, y + Math.sin(a) * s * 0.38]], col, s * 0.08); } }
+  ctx.restore();
+}
+
+// pointing hand, fingertip at x,y; press 0..1 pushes it down a little
+function hand(x, y, s, t, press, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+  const k = (t * 1.4) % 1;
+  ctx.globalAlpha *= 1 - k * 0.8; circ(x, y, s * (0.15 + k * 0.5), null, '#ffb347', 3); ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+  ctx.translate(x, y + press * s * 0.1); ctx.rotate(-0.25); ctx.scale(1 + 0.05 * Math.sin(t * 8), 1 + 0.05 * Math.sin(t * 8));
+  ctx.fillStyle = '#ffe0c2'; ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+  rr(-s * 0.22, s * 0.36, s * 0.44, s * 0.44, s * 0.14); ctx.fill(); ctx.stroke();
+  ell(-s * 0.2, s * 0.5, s * 0.07, s * 0.14, '#ffe0c2', 0.5); ctx.strokeStyle = INK; ctx.beginPath(); ctx.ellipse(-s * 0.2, s * 0.5, s * 0.07, s * 0.14, 0.5, 0, 7); ctx.stroke();
+  rr(-s * 0.09, 0, s * 0.18, s * 0.55, s * 0.09); ctx.fillStyle = '#ffe0c2'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- audio (soft, no fail sounds)
+let AC = null;
+function audioInit() {
+  if (!AC && !save.mute) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+  if (AC && AC.state === 'suspended') { try { AC.resume(); } catch (e) { /* ignore */ } }
+}
+let master = null;
+function tone(f, d, v, delay) {
+  if (!AC || save.mute) return;
+  try {
+    if (!master) { master = AC.createGain(); master.gain.value = 0.8; master.connect(AC.destination); }
+    f *= KEYS[curSeason()] || 1; d = d || 0.4; v = v || 0.07;
+    const t = AC.currentTime + (delay || 0);
+    [[1, 1], [2, 0.22]].forEach(([m, a]) => { // a soft chime: the note and a quiet octave above
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'sine'; o.frequency.value = f * m;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * a, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + d / m);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + d / m + 0.05);
+    });
+  } catch (e) { /* ignore */ }
+}
+const KEYS = [1, 1.122, 0.945]; // spring, summer, winter: the same notes a step apart
+const PENT = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+const sfx = {
+  place: () => tone(PENT[2], 0.25, 0.06), pick: () => tone(PENT[1], 0.2, 0.05),
+  effect: t => tone([PENT[1], PENT[3], PENT[0], PENT[4]][t], 0.5, 0.06),
+  bloom: () => [0, 1, 2, 3, 5].forEach((n, i) => tone(PENT[n], 0.9, 0.07, i * 0.14)),
+  card: () => { tone(PENT[3], 0.5, 0.05); tone(PENT[5], 0.6, 0.04, 0.12); },
+  click: () => tone(PENT[0], 0.12, 0.035), retry: () => { tone(PENT[2], 0.3, 0.04); tone(PENT[0], 0.4, 0.04, 0.14); }, // soft, not harsh
+  crow: () => { tone(660, 0.18, 0.05); tone(784, 0.2, 0.05, 0.12); tone(988, 0.35, 0.05, 0.26); }
+};
+
+// ---------------------------------------------------------------- game state
+let screen = 'home', lv = null, mapSeason = 0, mapCursor = 0;
+const levelCache = {};
+function getLevel(i) { return levelCache[i] || (levelCache[i] = makeLevel(i)); }
+let dailyL = null;
+const now = () => performance.now() / 1000;
+
+function starsFor(L, used) { return used <= L.par ? 3 : used <= L.par + 1 ? 2 : 1; }
+
+function newLv(L, kind, index) {
+  const slots = []; for (let c = 0; c < L.cols; c++) slots.push([-1, -1]);
+  const l = {
+    L, kind, index, slots, sel: -1, phase: 'edit', overlay: null, drag: null, ghost: null, pops: {},
+    show: L.grid, rec: null, ai: 0, at: 0, shake: 0, focus: { row: 2, idx: 0 }, bt: 0, tries: 0, newStars: 0, dreamUsed: false,
+    spop: {}, roostPop: -9, applied: false, diff: null, ot: 0, bloom2: false, guideNext: false
+  };
+  l.types = [0, 1, 2, 3].filter(t => L.inv[t] > 0);
+  l.sel = l.types[0];
+  return l;
+}
+function startLevel(i) {
+  i = Math.max(0, Math.min(NLEVELS - 1, i));
+  lv = newLv(getLevel(i), 'level', i);
+  lv.overlay = (i >= 3) ? 'card' : null;
+  screen = 'level'; clearParticles();
+  if (lv.L.demo) lv.ghost = 'demo';
+}
+function startDaily() {
+  const d = todayStr();
+  if (save.daily.date !== d) { save.daily = { date: d, stars: 0, tries: 3, extra: false }; persist(); }
+  if (!dailyL || dailyL.date !== d) { dailyL = makeDaily(d); dailyL.date = d; }
+  lv = newLv(dailyL, 'daily', -1);
+  lv.overlay = (save.daily.stars > 0 || save.daily.tries <= 0) ? 'end' : 'card';
+  screen = 'level'; clearParticles();
+}
+function startPractice() { // after the daily tries are spent: an unscored replay, stars stay as they are
+  lv = newLv(dailyL, 'daily', -1); lv.practice = true;
+  screen = 'level'; clearParticles();
+}
+function clearParticles() { while (particles.length) spare.push(particles.pop()); }
+function used(l) { let n = 0; for (const s of l.slots) for (const t of s) if (t >= 0) n++; return n; }
+function remaining(l, t) { let n = l.L.inv[t]; for (const s of l.slots) for (const x of s) if (x === t) n--; return n; }
+function slotsToPlaced(l) { return l.slots.map(s => s.filter(t => t >= 0)); }
+
+// ---- first-time guidance: a pulsing hand on exactly the next action of a tutorial level, once
+const NEWT = { 0: RAIN, 1: SUN, 2: BREEZE, 20: BREEZE, 40: FROST };
+function guideActive(l) { return !!l && l.kind === 'level' && l.L.demo && (l.replay || (!save.tut['L' + l.index] && !(save.stars[l.index] > 0))); }
+function replayGuide() { if (!lv || lv.phase !== 'edit') return; lv.replay = true; for (const sl of lv.slots) { sl[0] = -1; sl[1] = -1; } sfx.pick(); } // show the hand again on a tutorial level
+function skipGuide() { if (!lv || !guideActive(lv)) return; lv.replay = false; save.tut['L' + lv.index] = 1; persist(); }
+function guideStep() {
+  if (!lv || !LY || lv.phase !== 'edit' || lv.overlay || !guideActive(lv)) return null;
+  const need = [];
+  lv.L.sol.forEach((a, c) => a.forEach((t, l) => { if (t >= 0) need.push({ c, l, t }); }));
+  const nw = NEWT[lv.index];
+  need.sort((a, b) => (b.t === nw) - (a.t === nw));
+  const got = need.map(() => false), ctr = r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+  for (let c = 0; c < lv.L.cols; c++) for (let l = 0; l < 2; l++) {
+    const t = lv.slots[c][l]; if (t < 0) continue;
+    const k = need.findIndex((n, i) => !got[i] && n.c === c && n.t === t);
+    if (k < 0) return { kind: 'tap', p: ctr(slotRect(c, l)) }; // wrong tile: tap it to lift it
+    got[k] = true;
+  }
+  for (let i = 0; i < need.length; i++) if (!got[i]) {
+    const n = need[i], lay = lv.slots[n.c][n.l] < 0 ? n.l : 1 - n.l, ti = lv.types.indexOf(n.t);
+    if (ti < 0) continue;
+    return { kind: 'drag', type: n.t, from: ctr(trayRect(ti)), to: ctr(slotRect(n.c, lay)) };
+  }
+  return { kind: 'tap', p: { x: LY.roost.x, y: LY.roost.y - LY.roost.r * 0.3 } };
+}
+function drawGuide(t) {
+  const g = guideStep(); if (!g) return;
+  const s = Math.max(56, LY.sl * 1.3);
+  if (g.kind === 'tap') {
+    hand(g.p.x, g.p.y, s, t, Math.sin(t * 6) > 0.2 ? 1 : 0);
+    return;
+  }
+  const k = (t * 0.6) % 1, e = Math.min(1, Math.max(0, (k - 0.15) / 0.55)), q = e * e * (3 - 2 * e);
+  const x = g.from.x + (g.to.x - g.from.x) * q, y = g.from.y + (g.to.y - g.from.y) * q;
+  ctx.strokeStyle = 'rgba(255,190,60,' + (0.5 + 0.4 * Math.sin(t * 5)) + ')'; ctx.lineWidth = 4;
+  rr(g.to.x - LY.sl / 2 - 4, g.to.y - LY.sl / 2 - 4, LY.sl + 8, LY.sl + 8, LY.sl * 0.28); ctx.stroke();
+  if (k > 0.1 && k < 0.85) drawTile(g.type, x - LY.sl / 2, y - LY.sl / 2, LY.sl, t, 0.75);
+  hand(x, y, s, t, k > 0.1 && k < 0.85 ? 1 : 0, k > 0.9 ? (1 - k) * 10 : 1);
+}
+
+function slotPop(c, layer, t) {
+  lv.spop[c + ',' + layer] = now();
+  if (LY) { const r = slotRect(c, layer); burst(r.x + r.w / 2, r.y + r.h / 2, 8, [['#6fb7e6', '#ffd96b', '#7fcab0', '#8fb8ee'][t], '#ffffff']); }
+}
+function place(c, layer, t) {
+  if (lv.phase !== 'edit' || t < 0 || lv.slots[c][layer] >= 0 || remaining(lv, t) <= 0) return false;
+  lv.slots[c][layer] = t; sfx.place(); slotPop(c, layer, t); return true;
+}
+function trySlot(c, layer) { // tap on a slot
+  if (lv.phase !== 'edit') return;
+  if (lv.slots[c][layer] >= 0) { lv.slots[c][layer] = -1; sfx.pick(); }
+  else place(c, layer, lv.sel);
+}
+function playDay() {
+  if (lv.phase !== 'edit') return;
+  const placed = slotsToPlaced(lv);
+  lv.roostPop = now();
+  if (!placed.some(a => a.length)) { lv.shake = now(); return; }
+  lv.rec = []; sim(lv.L.cols, lv.L.rows, lv.L.grid, placed, lv.rec);
+  const seen = {}; // which sky slot each step belongs to (the nth tile of that kind in the column)
+  for (const ev of lv.rec) {
+    const key = ev.c * 4 + ev.t, nth = seen[key] || 0; seen[key] = nth + 1;
+    let k = 0; ev.l = 0;
+    for (let l = 0; l < 2; l++) if (lv.slots[ev.c][l] === ev.t) { if (k === nth) ev.l = l; k++; }
+  }
+  lv.phase = 'playing'; lv.ai = 0; lv.at = now(); lv.show = lv.L.grid; lv.fired = false; lv.applied = false; lv.diff = null; lv.bloom2 = false;
+  sfx.crow();
+}
+const EVDUR = 0.6; // each tile acts for this long, one after the other
+function evDur() { return EVDUR; }
+function openBloom() { lv.overlay = 'bloom'; lv.ot = now(); }
+
+const particles = [], spare = []; // live particles, and finished ones kept for reuse (no allocation per burst)
+const MAXP = 260;
+function burst(x, y, n, cols) {
+  for (let i = 0; i < n && particles.length < MAXP; i++) {
+    const a = Math.random() * 7, sp = 30 + Math.random() * 90, p = spare.pop() || {};
+    p.x = x; p.y = y; p.vx = Math.cos(a) * sp; p.vy = Math.sin(a) * sp - 40; p.life = 1 + Math.random() * 0.8; p.age = 0;
+    p.col = cols[i % cols.length]; p.r = 3 + Math.random() * 4;
+    particles.push(p);
+  }
+}
+
+function update(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i]; p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 90 * dt;
+    if (p.age > p.life) { spare.push(p); particles[i] = particles[particles.length - 1]; particles.pop(); }
+  }
+  if (screen !== 'level' || !lv) return;
+  const t = now();
+  if (lv.drag && !lv.drag.moved && ptr.down && !lv.overlay && t - lv.drag.t0 >= 0.5) { showRule(lv.drag.type); lv.drag = null; ptr.swallow = true; }
+  if (lv.phase === 'playing') {
+    const ev = lv.rec[lv.ai], p = (t - lv.at) / EVDUR;
+    if (!lv.fired && p > 0.05) { lv.fired = true; sfx.effect(ev.t); }
+    if (!lv.applied && p >= 0.55) { // the garden cell reacts in the middle of the step
+      lv.applied = true;
+      const prev = lv.show; lv.show = ev.g;
+      for (let i = 0; i < ev.g.length; i++) if (ev.g[i] !== prev[i]) {
+        lv.pops[i] = t;
+        const q = cellPos(i % lv.L.cols, (i / lv.L.cols) | 0);
+        burst(q.x, q.y, 8, [['#6fb7e6', '#ffd96b', '#7fcab0', '#8fb8ee'][ev.t], '#ffffff']);
+      }
+      if (ev.r >= 0) lv.pops[ev.r * lv.L.cols + ev.c] = t;
+    }
+    if (p >= 1) {
+      lv.ai++; lv.at = t; lv.fired = false; lv.applied = false;
+      if (lv.ai >= lv.rec.length) { lv.phase = 'settle'; lv.at = t; }
+    }
+  } else if (lv.phase === 'settle' && t - lv.at > 0.5) {
+    if (same(lv.show, lv.L.target)) {
+      lv.phase = 'bloom'; lv.bt = t; sfx.bloom();
+      const n = used(lv), st = starsFor(lv.L, n); lv.newStars = st;
+      lv.guideNext = guideActive(lv);
+      if (st === 3) portal.happytime();
+      if (lv.kind === 'level') {
+        if (lv.guideNext) save.tut['L' + lv.index] = 1;
+        save.stars[lv.index] = Math.max(save.stars[lv.index] || 0, st);
+        save.unlocked = Math.max(save.unlocked, Math.min(NLEVELS - 1, lv.index + 1));
+      } else if (lv.practice) lv.newStars = 0;
+      else save.daily.stars = Math.max(save.daily.stars, st);
+      persist();
+      bloomBurst(t);
+    } else {
+      lv.phase = 'diff'; lv.at = t; lv.diff = {}; lv.tries++; sfx.retry();
+      for (let i = 0; i < lv.show.length; i++) if (lv.show[i] !== lv.L.target[i]) lv.diff[i] = true;
+      if (lv.kind === 'daily' && !lv.practice) { save.daily.tries = Math.max(0, save.daily.tries - 1); persist(); }
+    }
+  } else if (lv.phase === 'diff' && t - lv.at > 1.6) { // the differing cell was shown; now rewind
+    lv.phase = 'rewind'; lv.at = t; lv.show = lv.L.grid; lv.diff = null;
+  } else if (lv.phase === 'rewind' && t - lv.at > 0.9) {
+    lv.phase = 'edit';
+    if (lv.kind === 'daily' && !lv.practice && save.daily.tries <= 0) lv.overlay = 'end';
+  } else if (lv.phase === 'bloom') {
+    if (!lv.bloom2 && t - lv.bt > 0.7) { lv.bloom2 = true; bloomBurst(t); sfx.bloom(); }
+    if (!lv.overlay && t - lv.bt > 1.6) openBloom();
+  }
+}
+function bloomBurst(t) {
+  let any = false;
+  for (let i = 0; i < lv.show.length; i++) if (lv.show[i] >= 4) {
+    any = true; lv.pops[i] = t;
+    const q = cellPos(i % lv.L.cols, (i / lv.L.cols) | 0);
+    burst(q.x, q.y, 14, PET);
+  }
+  if (!any) burst(LY.gx + lv.L.cols * LY.cs / 2, LY.gy + lv.L.rows * LY.cs / 2, 30, PET);
+}
+
+// ---------------------------------------------------------------- layout
+let LY = null;
+function layoutLevel() {
+  if (lv.ly && lv.lyW === W && lv.lyH === H) return lv.ly; // the layout only changes when the window does
+  lv.lyW = W; lv.lyH = H; return (lv.ly = layoutLevelNow());
+}
+function layoutLevelNow() {
+  const L = lv.L, cols = L.cols, rows = L.rows, portrait = H > W * 1.05;
+  const bar = H < 420 ? 50 : Math.max(58, Math.min(72, H * 0.075)); // a slimmer bar on short landscape phones
+  const o = { bar, portrait };
+  const ntr = lv.types.length;
+  if (portrait) {
+    const availH = H - bar - 12;
+    const cs = Math.min((W - 24) / cols, (availH - 76) / (1.7 * rows + 2.6), 110);
+    o.cs = cs; o.sl = Math.min(cs * 0.92, Math.max(cs * 0.8, 44));
+    // the target picture is large on phones: 70% of a garden cell, as wide as the screen allows
+    const pcs = Math.min(cs * 0.7, (W - 24 - 28 - 72) / cols), picW = cols * pcs, ph = rows * pcs;
+    const R = Math.max(34, Math.min(ph * 0.5, (W - 24 - 28 - picW) / 2));
+    const gw = picW + 28 + R * 2, y0 = bar + 10;
+    o.pic = { x: (W - gw) / 2, y: y0, cs: pcs };
+    o.roost = { x: (W - gw) / 2 + picW + 28 + R, y: y0 + ph / 2, r: R * 0.8 };
+    o.sky = y0 + Math.max(ph, R * 1.9) + 14;
+    o.gx = (W - cols * cs) / 2; o.gy = o.sky + 2 * (o.sl + 6) + 8;
+    o.ts = Math.min(cs * 0.95, 84); o.tg = 12;
+    o.tx = (W - (ntr * o.ts + (ntr - 1) * o.tg)) / 2; o.ty = o.gy + rows * cs + 14;
+  } else {
+    const availH = H - bar - 12;
+    let cs = Math.min((availH - 20 - 16) / (rows + 1.6), (W * 0.56) / cols, 110);
+    o.sl = Math.min(cs * 0.92, Math.max(cs * 0.8, 44));
+    if (o.sl < 44) { // short landscape phones: keep the sky slots at 44 px and give the garden what is left
+      o.sl = 44; cs = Math.min(cs, (H - bar - 128) / rows);
+    }
+    o.cs = cs;
+    o.gx = Math.max(12, (W * 0.58 - cols * cs) / 2); o.sky = bar + 8; o.gy = o.sky + 2 * (o.sl + 6) + 8;
+    const rx = o.gx + cols * cs + 28, pw = W - rx - 20;
+    o.ts = Math.max(44, Math.min(cs * 0.95, 84, (pw - 3 * 12) / 4)); o.tg = 12; o.ty = H - 14 - o.ts;
+    const R = Math.min(cs * 0.6, pw * 0.18);
+    const room = (o.ty - 12) - (bar + 10) - 18 - R * 2.5;
+    const pcs = Math.max(10, Math.min(cs * 0.75, pw / cols * 0.9, room / rows));
+    o.pic = { x: rx + (pw - cols * pcs) / 2, y: bar + 10, cs: pcs };
+    o.roost = { x: rx + pw / 2, y: o.pic.y + rows * pcs + 18 + R * 1.2, r: R };
+    o.tx = rx + (pw - (ntr * o.ts + (ntr - 1) * o.tg)) / 2;
+  }
+  return o;
+}
+// the optional last argument is a scratch object to fill (hot draw loops pass one, so nothing is allocated per frame)
+function slotRect(c, l, o) { o = o || {}; o.x = LY.gx + c * LY.cs + (LY.cs - LY.sl) / 2; o.y = LY.sky + l * (LY.sl + 6); o.w = o.h = LY.sl; return o; }
+function trayRect(i, o) { o = o || {}; o.x = LY.tx + i * (LY.ts + LY.tg); o.y = LY.ty; o.w = o.h = LY.ts; return o; }
+function cellPos(c, r, o) { o = o || {}; o.x = LY.gx + (c + 0.5) * LY.cs; o.y = LY.gy + (r + 0.5) * LY.cs; return o; }
+const sR = {}, tR = {}, cP = {}, SLOT = { c: 0, l: 0 }; // scratch objects
+const inside = (r, x, y, pad) => { pad = pad || 0; return x >= r.x - pad && x <= r.x + r.w + pad && y >= r.y - pad && y <= r.y + r.h + pad; };
+
+// ---------------------------------------------------------------- ui buttons
+let btns = [], lockUI = false, ovlDraw = false, T = 0;
+function btn(x, y, w, h, fn) { if (!lockUI || ovlDraw) btns.push({ x, y, w, h, fn }); }
+function roundBtn(x, y, r, kind, fill, fn, col) {
+  circ(x, y, r, fill || '#fff8e8', 'rgba(107,90,82,0.45)', 2.5);
+  icon(kind, x, y, r * 1.2, col);
+  btn(x - r - 4, y - r - 4, r * 2 + 8, r * 2 + 8, fn);
+}
+function toggleMute() { save.mute = !save.mute; persist(); if (!save.mute) { audioInit(); sfx.pick(); } }
+function pill(x, y, w, h, fill, fn) {
+  rr(x, y, w, h, h / 2); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = 'rgba(107,90,82,0.45)'; ctx.lineWidth = 2.5; ctx.stroke();
+  btn(x, y, w, h, fn);
+}
+
+// ---------------------------------------------------------------- home
+function homeGuide() { return !save.tut.home && save.unlocked === 0 && !(save.stars[0] > 0); }
+function playBtn() {
+  if (!save.tut.home) { save.tut.home = 1; persist(); }
+  startLevel(save.unlocked);
+}
+function drawHome() {
+  const portrait = H > W, compact = !portrait && H < 460, cx = compact ? W * 0.72 : W / 2;
+  roundBtn(W - 40, 40, 24, save.mute ? 'mute' : 'sound', null, toggleMute);
+  let by, bw = Math.min(280, compact ? W * 0.4 : W * 0.7);
+  const bh = 62;
+  if (compact) { // short landscape: the art on the left, the three buttons on the right, nothing below the screen
+    const ax = W * 0.27, rr_ = Math.min(H * 0.2, W * 0.12);
+    text(STR.title, ax, Math.max(34, H * 0.14), Math.min(36, W / 16), INK, 'center', '800');
+    rooster(ax, H * 0.5, rr_, T, Math.sin(T * 0.7) > 0.95, Math.sin(T * 0.9) > 0.97);
+    for (let i = 0; i < 4; i++) { const s = 34; drawTile(i, ax + (i - 1.5) * (s + 8) - s / 2, H * 0.5 + rr_ * 1.15, s, T); }
+    by = Math.max(60, (H - (bh + 14 + 52)) / 2);
+  } else {
+    const ty = Math.max(70, H * 0.14);
+    text(STR.title, cx, ty, Math.min(56, W / 9), INK, 'center', '800');
+    const rr_ = Math.min(W, H) * 0.18;
+    rooster(cx, H * 0.36 + rr_ * 0.2, rr_, T, Math.sin(T * 0.7) > 0.95, Math.sin(T * 0.9) > 0.97);
+    owl(portrait ? W * 0.82 : W * 0.72, H * 0.5, rr_ * 0.5, T);
+    for (let i = 0; i < 4; i++) { const s = Math.min(54, W / 7); drawTile(i, cx + (i - 1.5) * (s + 12) - s / 2, H * 0.52 + rr_ * 0.45, s, T); }
+    by = Math.min(H * 0.74, H - 142); // the three buttons always end above the notice line
+  }
+  pill(cx - bw / 2, by, bw, bh, '#bfe6a8', playBtn);
+  icon('play', cx - bw / 2 + 40, by + bh / 2, 34); text(STR.play, cx + 14, by + bh / 2, 26);
+  if (homeGuide()) hand(cx + bw / 2 - 50, by + bh / 2 + 4, 70, T, Math.sin(T * 6) > 0.2 ? 1 : 0);
+  pill(cx - bw / 2, by + bh + 14, bw / 2 - 7, 52, '#ffe6a3', () => { screen = 'map'; mapSeason = Math.floor(save.unlocked / PER_SEASON); mapCursor = save.unlocked; });
+  icon('map', cx - bw / 2 + 28, by + bh + 14 + 26, 28); text(STR.levels, cx - bw / 2 + 62 + (bw / 2 - 62) / 2 - 14, by + bh + 14 + 26, 17);
+  pill(cx + 7, by + bh + 14, bw / 2 - 7, 52, '#f7cfd8', startDaily);
+  icon('daily', cx + 7 + 28, by + bh + 14 + 26, 28); text(STR.daily, cx + 7 + 62 + (bw / 2 - 62) / 2 - 14, by + bh + 14 + 26, 17);
+  if (save.daily.date === todayStr() && save.daily.stars > 0) star(cx + bw / 2 - 6, by + bh + 14, 12, true);
+  text('© 2026 DMK INTEGRATIONS - FZCO', W / 2, H - 14, 12, 'rgba(107,90,82,0.7)', 'center');
+}
+
+// ---------------------------------------------------------------- map
+const MAPPTS = Array.from({ length: 20 }, () => [0, 0]);
+function drawMap() {
+  roundBtn(40, 40, 24, 'back', null, () => { screen = 'home'; });
+  roundBtn(W - 40, 40, 24, save.mute ? 'mute' : 'sound', null, toggleMute);
+  const tabW = Math.min(70, W / 5);
+  for (let s = 0; s < 3; s++) {
+    const x = W / 2 + (s - 1) * (tabW + 12) - tabW / 2, y = 16;
+    rr(x, y, tabW, 50, 16); ctx.fillStyle = SEASON_COL[s]; ctx.fill();
+    ctx.strokeStyle = s === mapSeason ? INK : 'rgba(107,90,82,0.3)'; ctx.lineWidth = s === mapSeason ? 3 : 2; ctx.stroke();
+    drawTile([RAIN, BREEZE, FROST][s], x + tabW / 2 - 18, y + 7, 36, T, 1, false);
+    if (s * PER_SEASON > save.unlocked) { ctx.fillStyle = 'rgba(251,243,225,0.6)'; rr(x, y, tabW, 50, 16); ctx.fill(); }
+    if (s * PER_SEASON <= save.unlocked) btn(x, y, tabW, 50, () => { mapSeason = s; });
+  }
+  const top = 90, ah = H - top - 20, aw = Math.min(W - 24, 640);
+  const cw = aw / 5, rh = Math.min(ah / 4, 130), ox = (W - aw) / 2, oy = top + (ah - rh * 4) / 2;
+  rr(ox, oy - 6, aw, rh * 4 + 12, 24); ctx.fillStyle = SEASON_COL[mapSeason] + 'aa'; ctx.fill();
+  const pos = j => { const row = (j / 5) | 0, k = j % 5, col = row % 2 ? 4 - k : k; return { x: ox + (col + 0.5) * cw, y: oy + (3 - row + 0.5) * rh }; };
+  ctx.setLineDash([2, 12]);
+  for (let j = 0; j < 20; j++) { const p = pos(j), q = MAPPTS[j]; q[0] = p.x; q[1] = p.y; }
+  line(MAPPTS, 'rgba(160,125,90,0.5)', 8);
+  ctx.setLineDash([]);
+  for (let j = 0; j < 20; j++) {
+    const i = mapSeason * PER_SEASON + j, p = pos(j), st = save.stars[i] || 0, open = i <= save.unlocked;
+    const sz = Math.min(cw, rh) * 0.62;
+    lantern(p.x, p.y - 4, sz, st > 0, T + j);
+    text(String(i + 1), p.x, p.y - 2, sz * 0.3, st > 0 ? INK : 'rgba(107,90,82,0.7)');
+    if (st > 0) for (let k = 0; k < 3; k++) star(p.x + (k - 1) * sz * 0.3, p.y + sz * 0.5, sz * 0.12, k < st);
+    if (i === mapCursor) { ctx.strokeStyle = INK; ctx.lineWidth = 3; rr(p.x - sz * 0.5, p.y - sz * 0.62, sz, sz * 1.3, 14); ctx.stroke(); }
+    if (!open) { ctx.fillStyle = 'rgba(251,243,225,0.55)'; rr(p.x - sz * 0.4, p.y - sz * 0.5, sz * 0.8, sz * 0.95, 12); ctx.fill(); }
+    else btn(p.x - cw / 2, p.y - rh / 2, cw, rh, () => startLevel(i));
+  }
+  owl(ox + 38, oy - 34 < 70 ? 80 : oy - 34, 22, T);
+}
+
+// ---------------------------------------------------------------- level
+function drawGrid(g, gx, gy, cs, cols, rows, t, sprite, pops, idxOffset, diff) {
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const i = r * cols + c, v = g[i], d = diff && diff[i];
+    const x = gx + c * cs + (d ? Math.sin(T * 26) * cs * 0.03 : 0), y = gy + r * cs;
+    rr(x + cs * 0.04, y + cs * 0.04, cs * 0.92, cs * 0.92, cs * 0.18);
+    ctx.fillStyle = (v >= 4 && (v & 1)) ? '#d9b78a' : '#ecd4b0'; ctx.fill();
+    ctx.strokeStyle = 'rgba(160,125,90,0.35)'; ctx.lineWidth = Math.max(1, cs * 0.02); ctx.stroke();
+    if (v) {
+      let s = cs, pt = pops && pops[i];
+      if (pt !== undefined) { const k = (T - pt) / 0.4; if (k >= 0 && k < 1) s *= 1 + 0.25 * Math.sin(Math.PI * k); }
+      drawItem(v, x + cs / 2, y + cs / 2, s, t, i + (idxOffset || 0));
+    }
+    if (d) { // this cell differs from the target
+      ctx.strokeStyle = 'rgba(232,118,95,' + (0.6 + 0.4 * Math.sin(T * 7)) + ')'; ctx.lineWidth = Math.max(3, cs * 0.06);
+      rr(x + cs * 0.02, y + cs * 0.02, cs * 0.96, cs * 0.96, cs * 0.2); ctx.stroke();
+    }
+  }
+}
+function drawEffect(ev, p) {
+  const cs = LY.cs, cx = LY.gx + (ev.c + 0.5) * cs;
+  const yTop = LY.sky + LY.sl, yEnd = ev.r < 0 ? LY.gy + cs * lv.L.rows : LY.gy + (ev.r + 0.5) * cs;
+  const a = Math.sin(Math.min(1, p / 0.5) * Math.PI * 0.5) * (p > 0.8 ? (1 - p) / 0.2 : 1);
+  ctx.save(); ctx.globalAlpha = Math.max(0, a);
+  if (ev.t === SUN) {
+    const g = ctx.createLinearGradient(0, yTop, 0, yEnd); g.addColorStop(0, 'rgba(255,225,120,0.7)'); g.addColorStop(1, 'rgba(255,225,120,0.15)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(cx - cs * 0.15, yTop); ctx.lineTo(cx + cs * 0.15, yTop); ctx.lineTo(cx + cs * 0.4, yEnd); ctx.lineTo(cx - cs * 0.4, yEnd); ctx.fill();
+  } else if (ev.t === RAIN) {
+    for (let i = 0; i < 7; i++) {
+      const k = (p * 1.8 + i * 0.37) % 1, dx = cx + ((i * 53) % 7 - 3) * cs * 0.09, dy = yTop + k * (yEnd - yTop);
+      ell(dx, dy, cs * 0.03, cs * 0.07, '#6fb7e6');
+    }
+  } else if (ev.t === BREEZE) {
+    const y = ev.r < 0 ? yEnd - cs * 0.5 : yEnd;
+    for (let i = 0; i < 3; i++) {
+      const k = (p * 1.2 + i * 0.2), x0 = cx - cs * 0.5 + k * cs * 1.1;
+      ctx.beginPath(); ctx.moveTo(x0 - cs * 0.3, y + (i - 1) * cs * 0.14); ctx.quadraticCurveTo(x0 - cs * 0.15, y + (i - 1) * cs * 0.14 - cs * 0.07, x0, y + (i - 1) * cs * 0.14);
+      ctx.strokeStyle = '#7fcab0'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+    }
+  } else if (ev.t === FROST) {
+    for (let i = 0; i < 8; i++) {
+      const k = (p * 1.4 + i * 0.13) % 1, dx = cx + ((i * 37) % 9 - 4) * cs * 0.07, dy = yTop + k * (yEnd - yTop);
+      circ(dx, dy, cs * 0.035, '#fff', '#9cc3ee', 1.5);
+    }
+  }
+  ctx.restore();
+}
+function pips() {
+  const L = lv.L, n = used(lv), py = LY.bar * 0.8;
+  if (lv.phase === 'playing') { // steps of the day, filled as each tile acts
+    const k = lv.rec.length, w = Math.min(16, W * 0.5 / k);
+    for (let i = 0; i < k; i++) circ(W / 2 + (i - (k - 1) / 2) * w, py, 4.5, i < lv.ai ? '#6fb7e6' : i === lv.ai ? '#ffd96b' : 'rgba(107,90,82,0.15)', INK, 1.2);
+    return;
+  }
+  const total = Math.max(L.par, n), w = Math.min(16, W * 0.5 / total); // tiles placed against the 3-star par
+  for (let i = 0; i < total; i++) circ(W / 2 + (i - (total - 1) / 2) * w, py, 4.5, i < n ? (i < L.par ? '#ffd96b' : '#e8765f') : 'rgba(107,90,82,0.1)', INK, 1.2);
+}
+function drawLevel() {
+  LY = layoutLevel();
+  const L = lv.L, cols = L.cols, rows = L.rows, t = now();
+  lockUI = !!lv.overlay;
+  // bar
+  roundBtn(34, LY.bar / 2 + 2, 22, 'back', null, () => { screen = (lv.kind === 'daily') ? 'home' : 'map'; if (screen === 'map') { mapSeason = Math.floor(lv.index / PER_SEASON); mapCursor = lv.index; } });
+  roundBtn(W - 34, LY.bar / 2 + 2, 22, save.mute ? 'mute' : 'sound', null, toggleMute);
+  if (lv.phase === 'edit' && guideActive(lv)) roundBtn(W - 90, LY.bar / 2 + 2, 22, 'skip', '#e6dcfa', skipGuide); // skip the how-to
+  else if (hintReady()) roundBtn(W - 90, LY.bar / 2 + 2, 22, 'moon', '#e6dcfa', hint);
+  else if (L.demo && lv.kind === 'level' && lv.phase === 'edit' && !guideActive(lv)) roundBtn(W - 90, LY.bar / 2 + 2, 22, 'help', '#e6dcfa', replayGuide);
+  const n = used(lv), st = starsFor(L, n);
+  const sc0 = n > 0 ? st : 3; // the star row pops when the star count changes
+  if (lv.starN !== sc0) { if (lv.starN !== undefined) lv.starT = t; lv.starN = sc0; }
+  const sp = (t - lv.starT) / 0.35, spp = sp >= 0 && sp < 1 ? 1 + 0.35 * Math.sin(Math.PI * sp) : 1;
+  for (let k = 0; k < 3; k++) star(W / 2 + (k - 1) * 34, LY.bar * 0.36, 13, n > 0 ? k < st : true, k === sc0 - 1 || k === sc0 ? spp : 1);
+  pips();
+  if (lv.kind === 'level') text(String(lv.index + 1), W / 2 - 100 > 70 ? W / 2 - 80 : 78, LY.bar / 2 + 2, 24);
+  else {
+    icon('daily', 76, LY.bar / 2 + 2, 28);
+    for (let k = 0; k < save.daily.tries; k++) circ(W / 2 + 70 + k * 18, LY.bar / 2 + 2, 6, '#ffd96b', INK, 1.5);
+  }
+  // picture (the goal): tap it to see it full size
+  const P = LY.pic, pw = cols * P.cs, ph = rows * P.cs, won = lv.phase === 'bloom';
+  if (won) { ctx.save(); ctx.shadowColor = '#ffd24d'; ctx.shadowBlur = 24; }
+  rr(P.x - 6, P.y - 6, pw + 12, ph + 12, 12); ctx.fillStyle = '#fffaf0'; ctx.fill(); ctx.strokeStyle = won ? '#e8a93a' : 'rgba(107,90,82,0.5)'; ctx.lineWidth = won ? 4 : 2.5; ctx.stroke();
+  if (won) ctx.restore();
+  drawGrid(L.target, P.x, P.y, P.cs, cols, rows, t, true, null, 0, lv.phase === 'diff' ? lv.diff : null);
+  circ(P.x + pw - 4, P.y + ph - 4, 15, 'rgba(255,248,232,0.92)', 'rgba(107,90,82,0.45)', 2); icon('zoom', P.x + pw - 4, P.y + ph - 4, 20);
+  if (lv.phase === 'edit') btn(P.x - 6, P.y - 6, Math.max(pw + 12, 44), Math.max(ph + 12, 44), () => { lv.overlay = 'pic'; sfx.pick(); });
+  // rooster: the one big button
+  const ro = LY.roost, wob = (t - lv.shake < 0.5) ? Math.sin((t - lv.shake) * 40) * 6 : 0;
+  const open = lv.phase === 'playing' && lv.ai === 0 && t - lv.at < 0.5 || lv.phase === 'bloom';
+  const act = lv.phase === 'edit' && used(lv) > 0;
+  if (act) { // ready: a soft ring tells the player where to tap next
+    ctx.save(); ctx.globalAlpha = 0.35 + 0.3 * Math.sin(t * 5); circ(ro.x, ro.y, ro.r * (1.25 + 0.06 * Math.sin(t * 5)), null, '#ffb347', 5); ctx.restore();
+  }
+  // press: a quick squash, then a stretch and settle
+  const rp = (t - lv.roostPop) / 0.35, rin = rp >= 0 && rp < 1;
+  const rs = rin ? 1 + 0.3 * Math.sin(Math.PI * rp) : 1, sq = rin && rp < 0.25 ? 1 - 0.14 * Math.sin(rp / 0.25 * Math.PI) : 1;
+  ctx.save(); ctx.globalAlpha = lv.phase === 'edit' ? 1 : 0.85;
+  ctx.translate(ro.x + wob, ro.y); ctx.scale(rs / sq, rs * sq);
+  rooster(0, 0, ro.r, t * (act ? 2.5 : 1), open || rs > 1.02, Math.sin(t * 0.9) > 0.97);
+  ctx.restore();
+  btn(ro.x - ro.r * 1.3, ro.y - ro.r * 1.4, ro.r * 2.6, ro.r * 2.8, playDay);
+  // sky slots
+  const ev = lv.phase === 'playing' ? lv.rec[lv.ai] : null, evp = ev ? Math.min(1, (t - lv.at) / EVDUR) : 0;
+  for (let c = 0; c < cols; c++) for (let l = 0; l < 2; l++) {
+    const s = slotRect(c, l, sR), v = lv.slots[c][l];
+    rr(s.x, s.y, s.w, s.h, s.w * 0.24); ctx.fillStyle = 'rgba(217,236,247,0.55)'; ctx.fill();
+    ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(107,90,82,0.35)'; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
+    if (v >= 0 && !(lv.drag && lv.drag.from === 'slot' && lv.drag.c === c && lv.drag.l === l)) {
+      let sc = 1; const pk = (t - (lv.spop[c + ',' + l] === undefined ? -9 : lv.spop[c + ',' + l])) / 0.3;
+      if (pk >= 0 && pk < 1) sc = 1 + 0.3 * Math.sin(Math.PI * pk);
+      if (ev && ev.c === c && ev.l === l) { // this tile is acting now
+        sc = 1 + 0.25 * Math.sin(Math.PI * Math.min(1, evp * 1.4));
+        ctx.save(); ctx.shadowColor = '#ffd24d'; ctx.shadowBlur = 22;
+        drawTile(v, s.x + s.w * (1 - sc) / 2, s.y + s.h * (1 - sc) / 2, s.w * sc, t);
+        ctx.restore();
+      } else drawTile(v, s.x + s.w * (1 - sc) / 2, s.y + s.h * (1 - sc) / 2, s.w * sc, t, ev ? 0.55 : 1);
+    }
+  }
+  // ghosts (dream / demo)
+  if (lv.ghost && lv.phase === 'edit') {
+    if (!lv.ghostList || lv.ghostKey !== lv.ghost) { // built once, not every frame
+      lv.ghostKey = lv.ghost;
+      lv.ghostList = lv.ghost === 'demo' ? L.sol.flatMap((a, c) => a.map((tt, l) => tt >= 0 ? { c, l, t: tt } : null)).filter(Boolean) : [lv.ghost];
+    }
+    const gl = lv.ghostList;
+    for (const g of gl) {
+      if (lv.slots[g.c].includes(g.t)) continue;
+      const lay = lv.slots[g.c][g.l] < 0 ? g.l : (lv.slots[g.c][1 - g.l] < 0 ? 1 - g.l : g.l), s = slotRect(g.c, lay, sR);
+      drawTile(g.t, s.x, s.y, s.w, t, 0.25 + 0.2 * Math.sin(t * 3));
+      if (lv.ghost === 'demo') { ctx.strokeStyle = 'rgba(255,190,60,' + (0.5 + 0.4 * Math.sin(t * 4)) + ')'; ctx.lineWidth = 4; rr(s.x - 3, s.y - 3, s.w + 6, s.w + 6, s.w * 0.28); ctx.stroke(); }
+    }
+  }
+  // garden
+  rr(LY.gx - 6, LY.gy - 6, cols * LY.cs + 12, rows * LY.cs + 12, 20); ctx.fillStyle = GARDEN_COL[curSeason()]; ctx.fill(); ctx.strokeStyle = won ? '#e8a93a' : 'rgba(107,90,82,0.45)'; ctx.lineWidth = won ? 4 : 2.5; ctx.stroke();
+  const gshow = (lv.phase === 'edit') ? L.grid : lv.show;
+  for (const k in lv.pops) if (T - lv.pops[k] > 0.5) delete lv.pops[k];
+  drawGrid(gshow, LY.gx, LY.gy, LY.cs, cols, rows, t, false, lv.pops, 100, lv.phase === 'diff' ? lv.diff : null);
+  if (won) { // the bloom: every flower glows
+    for (let i = 0; i < gshow.length; i++) if (gshow[i] >= 4) {
+      const q = cellPos(i % cols, (i / cols) | 0, cP), k = Math.max(0, 0.5 + 0.5 * Math.sin((t - lv.bt) * 6));
+      const g = ctx.createRadialGradient(q.x, q.y, 2, q.x, q.y, LY.cs * 0.7); g.addColorStop(0, 'rgba(255,230,120,' + (0.55 * k + 0.2) + ')'); g.addColorStop(1, 'rgba(255,230,120,0)');
+      ctx.fillStyle = g; ctx.fillRect(q.x - LY.cs, q.y - LY.cs, LY.cs * 2, LY.cs * 2);
+    }
+  }
+  if (ev) {
+    drawEffect(ev, evp);
+    if (ev.r >= 0) { // the cell the tile is working on
+      const q = cellPos(ev.c, ev.r);
+      ctx.strokeStyle = 'rgba(255,190,60,' + (0.5 + 0.5 * Math.sin(evp * Math.PI)) + ')'; ctx.lineWidth = 4;
+      rr(q.x - LY.cs * 0.48, q.y - LY.cs * 0.48, LY.cs * 0.96, LY.cs * 0.96, LY.cs * 0.2); ctx.stroke();
+    }
+  }
+  if (lv.phase === 'rewind') {
+    const k = (t - lv.at) / 0.9; ctx.save(); ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#fff'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(LY.gx + cols * LY.cs / 2, LY.gy + rows * LY.cs / 2, k * LY.cs * 2.2, 0, 7); ctx.stroke(); ctx.restore();
+  }
+  // tray
+  for (let i = 0; i < lv.types.length; i++) {
+    const tt = lv.types[i], r = trayRect(i, tR), rem = remaining(lv, tt), selc = lv.sel === tt;
+    const pk = (t - (lv.spop['t' + tt] === undefined ? -9 : lv.spop['t' + tt])) / 0.3, sc = pk >= 0 && pk < 1 ? 1 + 0.2 * Math.sin(Math.PI * pk) : 1;
+    ctx.save(); ctx.globalAlpha = rem > 0 ? (lv.drag && lv.drag.moved && lv.drag.from === 'tray' && lv.drag.type === tt ? 0.55 : 1) : 0.35;
+    drawTile(tt, r.x + r.w * (1 - sc) / 2, r.y + r.h * (1 - sc) / 2, r.w * sc, t);
+    ctx.restore();
+    if (selc) { ctx.strokeStyle = INK; ctx.lineWidth = 4; rr(r.x - 4, r.y - 4, r.w + 8, r.h + 8, r.w * 0.28); ctx.stroke(); }
+    if (L.demo && i === lv.types.length - 1 && used(lv) === 0) { ctx.strokeStyle = 'rgba(255,190,60,' + (0.5 + 0.4 * Math.sin(t * 4)) + ')'; ctx.lineWidth = 4; rr(r.x - 8, r.y - 8, r.w + 16, r.h + 16, r.w * 0.3); ctx.stroke(); }
+    circ(r.x + r.w - 6, r.y + r.h - 6, 13, '#fff8e8', INK, 2); text(String(rem), r.x + r.w - 6, r.y + r.h - 5, 15);
+  }
+  // keyboard focus ring
+  if (kbd && lv.phase === 'edit' && !lv.overlay) {
+    const f = lv.focus; let r = null;
+    if (f.row < 2) r = slotRect(Math.min(f.idx, cols - 1), f.row);
+    else if (f.row === 2) r = trayRect(Math.min(f.idx, lv.types.length - 1));
+    else r = { x: ro.x - ro.r * 1.1, y: ro.y - ro.r * 1.2, w: ro.r * 2.2, h: ro.r * 2.4 };
+    ctx.strokeStyle = '#e8765f'; ctx.lineWidth = 4; ctx.setLineDash([8, 5]); rr(r.x - 5, r.y - 5, r.w + 10, r.h + 10, 14); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // particles
+  for (const p of particles) { ctx.globalAlpha = Math.max(0, 1 - p.age / p.life); circ(p.x, p.y, p.r, p.col); } ctx.globalAlpha = 1;
+  // drag ghost
+  if (lv.drag && lv.drag.moved) {
+    const hs = slotAt(ptr.x, ptr.y); // the slot it would land in lights up
+    if (hs) { const r = slotRect(hs.c, hs.l, sR); ctx.strokeStyle = 'rgba(255,190,60,' + (0.6 + 0.3 * Math.sin(t * 12)) + ')'; ctx.lineWidth = 4; rr(r.x - 3, r.y - 3, r.w + 6, r.h + 6, r.w * 0.28); ctx.stroke(); }
+    const ds = LY.sl * 1.12; // held tile: a little bigger, with a soft shadow
+    ctx.save(); ctx.shadowColor = 'rgba(107,90,82,0.35)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 6;
+    drawTile(lv.drag.type, ptr.x - ds / 2, ptr.y - ds / 2 - 20, ds, t, 0.95);
+    ctx.restore();
+  }
+  if (!lv.overlay) drawGuide(t);
+  // overlays
+  lockUI = !!lv.overlay; ovlDraw = true;
+  if (lv.overlay) {
+    ctx.fillStyle = 'rgba(251,243,225,0.82)'; ctx.fillRect(0, 0, W, H);
+    if (lv.overlay === 'card') drawCard(t);
+    else if (lv.overlay === 'bloom') drawBloom(t);
+    else if (lv.overlay === 'end') drawEnd(t);
+    else if (lv.overlay === 'pic') drawPic(t);
+    else if (lv.overlay === 'rule') drawRule(t);
+  }
+  ovlDraw = false; lockUI = false;
+}
+const RULES = [
+  ['Rain', 'Waters the first seed below it.'],
+  ['Sun', 'Grows a wet seed one step. It also dries a puddle, and melts ice into a puddle.'],
+  ['Breeze', 'Pushes the first thing below it one step to the right, if there is room. Ice stays put.'],
+  ['Frost', 'Turns a puddle into ice.']
+];
+function showRule(tt) { if (tt < 0 || tt > 3) return; lv.overlay = 'rule'; lv.ruleT = tt; sfx.card(); }
+function wrap(str, n) { const out = []; let cur = ''; for (const w of str.split(' ')) { if (cur && (cur + ' ' + w).length > n) { out.push(cur); cur = w; } else cur = cur ? cur + ' ' + w : w; } if (cur) out.push(cur); return out; }
+function drawRule(t) { // the tile rule card; tap anywhere to close
+  const cw = Math.min(W - 28, 380), fs = cw < 340 ? 15 : 17, lines = wrap(RULES[lv.ruleT][1], Math.floor((cw - 40) / (fs * 0.52)));
+  const ch = 190 + (lines.length + 1) * (fs + 8), x = (W - cw) / 2, y = Math.max(10, (H - ch) / 2);
+  btn(0, 0, W, H, () => { lv.overlay = null; });
+  rr(x, y, cw, ch, 28); ctx.fillStyle = '#fffaf0'; ctx.fill(); ctx.strokeStyle = 'rgba(107,90,82,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+  drawTile(lv.ruleT, W / 2 - 40, y + 18, 80, t);
+  text(RULES[lv.ruleT][0], W / 2, y + 120, 26, INK, 'center', '800');
+  lines.forEach((ln, i) => text(ln, W / 2, y + 154 + i * (fs + 8), fs));
+  text('Each day: breeze, rain, sun, frost.', W / 2, y + 154 + lines.length * (fs + 8) + 6, fs - 2, 'rgba(107,90,82,0.8)');
+  const by = y + ch - 38;
+  circ(W / 2, by, 26, '#bfe6a8', INK, 3); icon('close', W / 2, by, 34);
+}
+function drawPic(t) { // the target picture at full size; tap anywhere to close
+  const L = lv.L, cs = Math.min((W - 40) / L.cols, (H - 170) / L.rows, 150), pw = cs * L.cols, ph = cs * L.rows;
+  const x = (W - pw) / 2, y = Math.max(20, (H - ph - 90) / 2);
+  btn(0, 0, W, H, () => { lv.overlay = null; });
+  rr(x - 10, y - 10, pw + 20, ph + 20, 18); ctx.fillStyle = '#fffaf0'; ctx.fill(); ctx.strokeStyle = 'rgba(107,90,82,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+  drawGrid(L.target, x, y, cs, L.cols, L.rows, t, true, null, 0);
+  const by = y + ph + 52;
+  circ(W / 2, by, 32, '#bfe6a8', INK, 3); icon('close', W / 2, by, 40);
+}
+function drawCard(t) {
+  const cw = Math.min(W - 32, 360), ch = 230, x = (W - cw) / 2, y = (H - ch) / 2;
+  rr(x, y, cw, ch, 28); ctx.fillStyle = '#fffaf0'; ctx.fill(); ctx.strokeStyle = 'rgba(107,90,82,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+  if (lv.kind === 'level') { lantern(W / 2, y + 52, 60, false, t); text(String(lv.index + 1), W / 2, y + 54, 22); }
+  else { icon('daily', W / 2, y + 50, 56); for (let k = 0; k < save.daily.tries; k++) circ(W / 2 + (k - (save.daily.tries - 1) / 2) * 22, y + 94, 7, '#ffd96b', INK, 1.5); }
+  const sy = y + 150;
+  circ(W / 2, sy, 42, '#bfe6a8', INK, 3); icon('play', W / 2, sy, 52);
+  btn(W / 2 - 46, sy - 46, 92, 92, closeCard);
+  if (lv.kind === 'level' && !save.tut.card) hand(W / 2 + 4, sy + 6, 70, t, Math.sin(t * 6) > 0.2 ? 1 : 0);
+}
+function closeCard() {
+  lv.overlay = null; sfx.pick();
+  if (!save.tut.card) { save.tut.card = 1; persist(); }
+  if (!lv.L.demo) { // each tile rule is shown once, the first time a level offers that tile
+    const t = lv.types.find(x => !save.tut['R' + x]);
+    if (t !== undefined) { save.tut['R' + t] = 1; persist(); showRule(t); }
+  }
+}
+// A plain in-game hint (no ad, no reward): offered only after one failed day, once per level, and never in the daily.
+function hintReady() { return !!lv && lv.kind === 'level' && lv.phase === 'edit' && !lv.overlay && lv.tries > 0 && !lv.dreamUsed && !lv.L.demo; }
+function hint() {
+  if (!hintReady()) return;
+  lv.dreamUsed = true;
+  const mine = lv;
+  portal.rewarded(() => { if (lv === mine) showHint(); }, () => { mine.dreamUsed = false; }); // a failed ad gives the hint back
+}
+function showHint() {
+  const list = [];
+  lv.L.sol.forEach((a, c) => a.forEach((tt, l) => { if (tt >= 0) list.push({ c, l, t: tt }); }));
+  lv.ghost = list[Math.floor(list.length / 2)] || null;
+  sfx.pick();
+}
+function nextLevel() {
+  if (lv.kind === 'level' && lv.index < NLEVELS - 1) startLevel(lv.index + 1);
+  else { screen = 'map'; mapSeason = Math.floor(Math.min(save.unlocked, NLEVELS - 1) / PER_SEASON); }
+}
+function drawBloom(t) {
+  const cw = Math.min(W - 24, 420), ch = 300, x = (W - cw) / 2, y = (H - ch) / 2;
+  rr(x, y, cw, ch, 28); ctx.fillStyle = '#fffaf0'; ctx.fill(); ctx.strokeStyle = 'rgba(107,90,82,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+  for (let i = 0; i < 3; i++) { const pk = Math.max(0, Math.min(1, (t - lv.ot - i * 0.25) / 0.3)); star(W / 2 + (i - 1) * 62, y + 54, 26, i < lv.newStars, 0.6 + 0.4 * Math.sin(pk * Math.PI / 2) + 0.2 * Math.sin(pk * Math.PI)); }
+  if (lv.kind === 'level') {
+    const base = Math.floor(lv.index / PER_SEASON) * PER_SEASON, ls = Math.min(24, (cw - 24) / 20 * 1.2);
+    for (let j = 0; j < 20; j++) {
+      const i = base + j, lit = (save.stars[i] || 0) > 0, px = x + cw / 2 + (j - 9.5) * ((cw - 30) / 20), py = y + 118 + Math.sin(j * 0.7) * 4;
+      lantern(px, py, ls, lit, t + j);
+    }
+  } else { owl(W / 2, y + 125, 34, t); }
+  const by = y + ch - 74;
+  if (lv.kind === 'level') {
+    roundBtn(W / 2 - 84, by, 30, 'replay', '#fff8e8', () => startLevel(lv.index));
+    roundBtn(W / 2 + 84, by, 30, 'map', '#ffe6a3', () => { screen = 'map'; mapSeason = Math.floor(lv.index / PER_SEASON); mapCursor = Math.min(save.unlocked, lv.index + 1); });
+    circ(W / 2, by, 40, '#bfe6a8', INK, 3); icon('next', W / 2, by, 50); btn(W / 2 - 44, by - 44, 88, 88, nextLevel);
+    if (lv.guideNext) hand(W / 2 + 4, by + 6, 70, t, Math.sin(t * 6) > 0.2 ? 1 : 0);
+  } else {
+    text(STR.tomorrow, W / 2, y + 180, 18);
+    roundBtn(W / 2, by, 34, 'home', '#bfe6a8', () => { screen = 'home'; });
+  }
+}
+function drawEnd(t) {
+  const cw = Math.min(W - 24, 360), ch = 280, x = (W - cw) / 2, y = (H - ch) / 2;
+  rr(x, y, cw, ch, 28); ctx.fillStyle = '#fffaf0'; ctx.fill(); ctx.strokeStyle = 'rgba(107,90,82,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+  owl(W / 2, y + 90, 46, t);
+  if (save.daily.stars > 0) for (let i = 0; i < 3; i++) star(W / 2 + (i - 1) * 50, y + 166, 20, i < save.daily.stars);
+  text(STR.tomorrow, W / 2, y + 204, 18);
+  if (save.daily.stars <= 0 && save.daily.tries <= 0) {
+    roundBtn(W / 2 - 50, y + ch - 36, 30, 'replay', '#fff8e8', startPractice);
+    roundBtn(W / 2 + 50, y + ch - 36, 30, 'home', '#bfe6a8', () => { screen = 'home'; });
+  } else roundBtn(W / 2, y + ch - 36, 30, 'home', '#bfe6a8', () => { screen = 'home'; });
+}
+
+// ---------------------------------------------------------------- input
+let kbd = false;
+const ripples = [];
+const ptr = { id: -1, down: false, x: 0, y: 0, sx: 0, sy: 0, swallow: false };
+// the canvas rect is read once per press (not on every move), so pointer moves never force a layout
+const PP = { x: 0, y: 0 };
+function pos(e, fresh) {
+  if (fresh || !crect) crect = cv.getBoundingClientRect();
+  PP.x = (e.clientX - crect.left) * (W / crect.width); PP.y = (e.clientY - crect.top) * (H / crect.height); return PP;
+}
+function hitBtn(x, y) {
+  for (let i = btns.length - 1; i >= 0; i--) { const b = btns[i]; if (inside(b, x, y)) { if (b.fn !== toggleMute) sfx.click(); b.fn(); return true; } }
+  return false;
+}
+function overTray(x, y) { return !!LY && y >= LY.ty - LY.ts * 0.4; }
+function slotAt(x, y) {
+  if (!lv) return null;
+  let best = null, bd = 1e9; // returns the shared SLOT object: use it before calling slotAt again
+  for (let c = 0; c < lv.L.cols; c++) for (let l = 0; l < 2; l++) {
+    const s = slotRect(c, l, sR), d = Math.hypot(x - (s.x + s.w / 2), y - (s.y + s.h / 2));
+    if (d < bd && d < s.w * 0.8) { bd = d; SLOT.c = c; SLOT.l = l; best = SLOT; }
+  }
+  return best;
+}
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault(); kbd = false; audioInit();
+  if (ptr.down) return; // a second finger must not disturb the press in progress
+  ptr.id = e.pointerId;
+  try { cv.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ }
+  const p = pos(e, true); ptr.down = true; ptr.x = ptr.sx = p.x; ptr.y = ptr.sy = p.y;
+  ripples.push({ x: p.x, y: p.y, t: now() }); // instant touch feedback
+  if (screen === 'level' && lv && lv.phase === 'bloom' && !lv.overlay && now() - lv.bt > 1.2) openBloom();
+  if (screen === 'level' && lv && lv.phase === 'edit' && !lv.overlay && LY) {
+    for (let i = 0; i < lv.types.length; i++) if (inside(trayRect(i), p.x, p.y, 4)) {
+      const tt = lv.types[i];
+      lv.drag = { type: tt, from: 'tray', moved: false, selectOnly: remaining(lv, tt) <= 0, t0: now() };
+      return;
+    }
+    const s = slotAt(p.x, p.y);
+    if (s && lv.slots[s.c][s.l] >= 0) {
+      lv.drag = { type: lv.slots[s.c][s.l], from: 'slot', c: s.c, l: s.l, moved: false, t0: now() };
+    }
+  }
+});
+cv.addEventListener('pointermove', e => {
+  if (!ptr.down || e.pointerId !== ptr.id) return;
+  const p = pos(e); ptr.x = p.x; ptr.y = p.y;
+  if (lv && lv.drag && !lv.drag.moved && Math.hypot(p.x - ptr.sx, p.y - ptr.sy) > 10) lv.drag.moved = true;
+});
+function endPointer(e, cancel) {
+  if (!ptr.down || e.pointerId !== ptr.id) return; ptr.down = false;
+  if (ptr.swallow) { ptr.swallow = false; return; } // the press already opened the rule card
+  const p = pos(e); ptr.x = p.x; ptr.y = p.y;
+  const d = (screen === 'level' && lv) ? lv.drag : null;
+  if (d) {
+    lv.drag = null;
+    if (cancel) return;
+    if (!d.moved) { // tap
+      if (d.from === 'tray') { if (!d.selectOnly) selTile(d.type); }
+      else trySlot(d.c, d.l);
+      return;
+    }
+    const s = slotAt(p.x, p.y);
+    if (s && lv.phase === 'edit') {
+      if (d.from === 'slot') {
+        const other = lv.slots[s.c][s.l]; // an occupied target swaps with the held tile; nothing is overwritten
+        lv.slots[d.c][d.l] = -1; lv.slots[s.c][s.l] = -1;
+        if (!place(s.c, s.l, d.type)) { lv.slots[d.c][d.l] = d.type; lv.slots[s.c][s.l] = other; }
+        else if (other >= 0) lv.slots[d.c][d.l] = other;
+      } else place(s.c, s.l, d.type);
+    } else if (d.from === 'slot' && lv.phase === 'edit' && overTray(p.x, p.y)) { lv.slots[d.c][d.l] = -1; sfx.pick(); } // lifted back to the tray
+    // anywhere else: the tile snaps back to its slot
+    return;
+  }
+  if (cancel) return;
+  if (!hitBtn(p.x, p.y) && screen === 'level' && lv && !lv.overlay && lv.phase === 'edit' && LY) {
+    const s = slotAt(p.x, p.y);
+    if (s) trySlot(s.c, s.l);
+  }
+}
+cv.addEventListener('pointerup', e => endPointer(e, false));
+cv.addEventListener('pointercancel', e => endPointer(e, true));
+
+window.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts (Ctrl+W ...) alone
+  // keys by physical position (e.code) so AZERTY etc. work; B = back (no Escape), M = mute, S = skip the how-to
+  const CODES = { ArrowLeft: 'ArrowLeft', ArrowRight: 'ArrowRight', ArrowUp: 'ArrowUp', ArrowDown: 'ArrowDown', Enter: 'Enter', NumpadEnter: 'Enter', Space: ' ', Backspace: 'Backspace', Delete: 'Delete', KeyV: 'v', KeyR: 'r', KeyB: 'Escape', KeyM: 'm', KeyS: 's' };
+  const k = CODES[e.code];
+  if (!k) return;
+  audioInit();
+  if (k === 'm') { e.preventDefault(); toggleMute(); return; }
+  if ((k === 'v' || k === 'r' || k === 's') && !(screen === 'level' && lv && lv.phase === 'edit')) return;
+  e.preventDefault(); kbd = true;
+  if (k === 's') { skipGuide(); return; }
+  if (screen === 'home') { if (k === 'Enter' || k === ' ') playBtn(); return; }
+  if (screen === 'map') {
+    if (k === 'Escape') screen = 'home';
+    else if (k === 'ArrowLeft' || k === 'ArrowDown') mapCursor = Math.max(0, mapCursor - 1);
+    else if (k === 'ArrowRight' || k === 'ArrowUp') mapCursor = Math.min(save.unlocked, mapCursor + 1);
+    else if (k === 'Enter') startLevel(mapCursor);
+    mapSeason = Math.floor(mapCursor / PER_SEASON); return;
+  }
+  if (screen !== 'level' || !lv) return;
+  if (lv.overlay) {
+    if (lv.overlay === 'pic' || lv.overlay === 'rule') { lv.overlay = null; return; }
+    if (k === 'Enter' || k === ' ') {
+      if (lv.overlay === 'card') closeCard();
+      else if (lv.overlay === 'bloom') nextLevelOrHome();
+      else screen = 'home';
+    } else if (k === 'Escape') { screen = lv.kind === 'daily' ? 'home' : 'map'; }
+    return;
+  }
+  if (k === 'Escape') { screen = lv.kind === 'daily' ? 'home' : 'map'; return; }
+  if (lv.phase === 'bloom' && now() - lv.bt > 1.2 && (k === 'Enter' || k === ' ')) { openBloom(); return; }
+  if (lv.phase !== 'edit') return;
+  if (k === 'v' || k === 'V') { lv.overlay = 'pic'; return; } // full-size target
+  if (k === 'r' || k === 'R') { const fc = lv.focus; showRule(fc.row === 2 ? lv.types[fc.idx] : fc.row < 2 ? lv.slots[fc.idx][fc.row] : -1); return; } // rule card of the focused tile
+  const f = lv.focus, cols = lv.L.cols, nt = lv.types.length;
+  const rowMax = r => r < 2 ? cols - 1 : r === 2 ? nt - 1 : 0;
+  if (k === 'ArrowLeft') f.idx = Math.max(0, f.idx - 1);
+  else if (k === 'ArrowRight') f.idx = Math.min(rowMax(f.row), f.idx + 1);
+  else if (k === 'ArrowUp') { f.row = Math.max(0, f.row - 1); f.idx = Math.min(f.idx, rowMax(f.row)); }
+  else if (k === 'ArrowDown') { f.row = Math.min(3, f.row + 1); f.idx = Math.min(f.idx, rowMax(f.row)); }
+  else if (k === 'Backspace' || k === 'Delete') { if (f.row < 2) { lv.slots[f.idx][f.row] = -1; sfx.pick(); } }
+  else if (k === 'Enter' || k === ' ') {
+    if (f.row < 2) trySlot(f.idx, f.row);
+    else if (f.row === 2) { selTile(lv.types[f.idx]); }
+    else playDay();
+  }
+});
+function selTile(tt) { lv.sel = tt; lv.spop['t' + tt] = now(); sfx.pick(); }
+function nextLevelOrHome() { if (lv.kind === 'daily') screen = 'home'; else nextLevel(); }
+
+// ---------------------------------------------------------------- accessibility layer
+// The game is drawn on one canvas, so the active actions are also offered as real (visually hidden) buttons with a status line.
+const A11 = { box: null, status: null, key: '' };
+function a11yList() {
+  const mute = [save.mute ? 'Sound is off. Turn sound on' : 'Sound is on. Turn sound off', toggleMute];
+  if (screen === 'home') return { s: 'Little Weather', a: [['Play', playBtn], ['Levels', () => { screen = 'map'; mapSeason = Math.floor(save.unlocked / PER_SEASON); mapCursor = save.unlocked; }], ['Daily puzzle', startDaily], mute] };
+  if (screen === 'map') return { s: 'Level map, season ' + (mapSeason + 1), a: [['Back to home', () => { screen = 'home'; }], ['Play level ' + (mapCursor + 1), () => startLevel(mapCursor)], mute] };
+  if (!lv) return { s: '', a: [] };
+  const back = ['Back', () => { screen = lv.kind === 'daily' ? 'home' : 'map'; }], name = lv.kind === 'daily' ? 'Daily puzzle' : 'Level ' + (lv.index + 1);
+  if (lv.overlay === 'card') return { s: name, a: [['Start', closeCard], back] };
+  if (lv.overlay === 'bloom') return { s: name + ': the garden bloomed, ' + lv.newStars + ' of 3 stars', a: lv.kind === 'level' ? [['Next level', nextLevel], ['Replay', () => startLevel(lv.index)], ['Level map', () => { screen = 'map'; }]] : [['Home', () => { screen = 'home'; }]] };
+  if (lv.overlay === 'end') return { s: 'Come back tomorrow', a: (save.daily.stars <= 0 && save.daily.tries <= 0 ? [['Practice again, no stars', startPractice]] : []).concat([['Home', () => { screen = 'home'; }]]) };
+  if (lv.overlay === 'pic' || lv.overlay === 'rule') return { s: lv.overlay === 'rule' ? RULES[lv.ruleT][0] + '. ' + RULES[lv.ruleT][1] : 'The garden to make', a: [['Close', () => { lv.overlay = null; }]] };
+  const a = [back];
+  if (lv.phase === 'edit') {
+    a.push(['Play the day', playDay], ['Show the garden to make', () => { lv.overlay = 'pic'; }], ['Rules of the tiles', () => showRule(lv.types[0])]);
+    if (hintReady()) a.push(['Show a hint', hint]);
+  }
+  a.push(mute);
+  return { s: name + ': ' + used(lv) + ' tiles placed, three stars for ' + lv.L.par + ' or fewer', a };
+}
+function a11ySync() {
+  if (!A11.box) {
+    if (typeof document.body === 'undefined' || !document.body || !document.body.appendChild) return;
+    try {
+      const b = document.createElement('div'), st = document.createElement('div');
+      b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'Little Weather controls');
+      b.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap';
+      st.setAttribute('aria-live', 'polite'); b.appendChild(st);
+      document.body.appendChild(b); A11.box = b; A11.status = st;
+    } catch (e) { A11.box = null; return; }
+  }
+  const L = a11yList(), key = L.s + '|' + L.a.map(x => x[0]).join('|');
+  if (key === A11.key) return;
+  A11.key = key;
+  try {
+    while (A11.box.children.length > 1) A11.box.removeChild(A11.box.children[1]);
+    A11.status.textContent = L.s;
+    L.a.forEach(([label, fn]) => {
+      const b = document.createElement('button'); b.textContent = label;
+      b.addEventListener('click', () => { audioInit(); fn(); });
+      A11.box.appendChild(b);
+    });
+  } catch (e) { /* ignore */ }
+}
+
+// ---------------------------------------------------------------- loop
+let last = performance.now(), raf = 0, hiddenAt = 0;
+// Pause the loop while the tab is hidden; on return, shift the running timers so a day in progress continues where it was.
+function setPaused(p) {
+  if (p) {
+    portal.gameplayStop();
+    if (!raf && hiddenAt) return;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    hiddenAt = now();
+  } else if (hiddenAt) {
+    const gap = now() - hiddenAt; hiddenAt = 0;
+    if (lv) { lv.at += gap; lv.bt += gap; lv.ot += gap; lv.shake += gap; lv.roostPop += gap; for (const k in lv.spop) lv.spop[k] += gap; for (const k in lv.pops) lv.pops[k] += gap; }
+    for (let i = 0; i < ripples.length; i++) ripples[i].t += gap;
+    last = performance.now();
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
+}
+document.addEventListener('visibilitychange', () => setPaused(document.hidden));
+function frame(ms) {
+  raf = 0;
+  const dt = Math.min(0.05, (ms - last) / 1000); last = ms; T = ms / 1000;
+  update(dt);
+  const se = curSeason();
+  if (!paper || paperSeason !== se) { paper = makePaper(se); paperSeason = se; }
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.drawImage(paper, 0, 0, W, H);
+  btns = []; lockUI = false; ovlDraw = false;
+  if (screen === 'home') drawHome();
+  else if (screen === 'map') drawMap();
+  else if (screen === 'level' && lv) drawLevel();
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const k = (now() - ripples[i].t) / 0.35;
+    if (k >= 1) { ripples.splice(i, 1); continue; }
+    ctx.globalAlpha = 0.5 * (1 - k); circ(ripples[i].x, ripples[i].y, 8 + k * 26, null, '#ffb347', 3); ctx.globalAlpha = 1;
+  }
+  a11ySync();
+  // gameplay is on while a level or daily is open and not yet bloomed
+  if (screen === 'level' && lv && lv.phase !== 'bloom' && !lv.overlay) portal.gameplayStart(); else portal.gameplayStop();
+  if (!loadDone) { loadDone = true; portal.loadingStop(); const e = document.getElementById('loading'); if (e && e.style) e.style.display = 'none'; }
+  raf = requestAnimationFrame(frame);
+}
+let loadDone = false;
+raf = requestAnimationFrame(frame);
+</script>
+</body>
+</html>

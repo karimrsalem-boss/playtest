@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<!-- © 2026 DMK INTEGRATIONS - FZCO. All rights reserved. -->
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="copyright" content="© 2026 DMK INTEGRATIONS - FZCO">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f3e6c4'/%3E%3Cpath d='M10 42h44l-8 10H18z' fill='%23d9663f'/%3E%3Cpath d='M32 10v30H16z' fill='%23fff6dc' stroke='%23553' stroke-width='2'/%3E%3Cpath d='M35 16v24h14z' fill='%232a9d8f'/%3E%3Cpath d='M6 56q6-4 12 0t12 0 12 0 12 0' fill='none' stroke='%232a9d8f' stroke-width='3'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Inkwake Relay</title>
+<style>
+:root{--parch:#f6ecd2;--sepia:#7a5530;--ink:#3b2a1a;--teal:#1fa6a0;--coral:#ff6f59;--sun:#f4b400;--plum:#8e4585}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#d9c7a0;color:var(--ink);font-family:"Trebuchet MS",Verdana,sans-serif;overflow:hidden;touch-action:pan-y pinch-zoom;user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0;display:flex;flex-direction:column}
+#view{position:relative;flex:1 1 auto;min-height:0;min-width:0}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hidden{display:none!important}
+button{font:inherit;color:var(--ink);background:var(--parch);border:3px solid var(--sepia);border-radius:18px;padding:10px 18px;min-height:44px;min-width:44px;cursor:pointer;box-shadow:0 3px 0 var(--sepia);transition:transform .08s}
+button:focus-visible{outline:4px solid var(--sun);outline-offset:2px}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--sepia)}
+button.big{font-size:1.5rem;background:var(--teal);color:#fff;border-color:#0d6e6a;box-shadow:0 4px 0 #0d6e6a;padding:12px 30px}
+.chip.wide{width:auto;border-radius:23px;padding:0 14px;font-size:1rem}
+.optlbl{font-size:.85rem;color:var(--sepia);margin:6px 0 0}
+#hud #skipTip{position:absolute;left:50%;top:104px;transform:translateX(-50%);pointer-events:auto;min-height:44px;padding:6px 14px;font-size:.95rem;opacity:.9}
+#hudBtns{display:flex;gap:6px;pointer-events:none}
+#hudBtns button{pointer-events:auto}
+#muteBtn{padding:6px 10px;font-size:1.1rem;min-height:48px;min-width:48px}
+button:disabled{opacity:.55;cursor:default}
+#hud{position:absolute;left:0;right:0;top:0;height:96px;display:flex;flex-direction:column;padding:2px 10px;pointer-events:none}
+#hud>*{pointer-events:none}
+#hudRow{display:flex;align-items:center;justify-content:space-between;height:58px}
+#dial{width:56px;height:56px}
+#scoreBox{text-align:center;line-height:1.05;white-space:nowrap}
+#sc{font-size:1.9rem;font-weight:bold;display:inline-block}
+#sc.bump{animation:bump .3s}
+@keyframes bump{40%{transform:scale(1.45);color:var(--coral)}}
+#rk{font-size:1.1rem;margin-left:6px;color:var(--sepia);font-weight:bold}
+#sparkInfo{min-width:54px;text-align:center;font-size:1.05rem;font-weight:bold}
+#pauseBtn{pointer-events:auto;padding:6px 12px;font-size:1.1rem;min-height:48px;min-width:48px}
+#goalRow{height:34px}
+#goalTxt{font-size:.9rem;font-weight:bold;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+#bar{position:relative;height:10px;border:2px solid var(--sepia);border-radius:6px;background:#fff6dc;overflow:hidden;margin-top:2px}
+#bar i{position:absolute;left:0;top:0;bottom:0;display:block;width:0}
+#barAll{background:#c9b27a}
+#barMe{background:var(--teal)}
+@media (max-width:400px){#hud{padding:2px 6px}#sc{font-size:1.45rem}#rk{font-size:.9rem;margin-left:3px}#sparkInfo{min-width:34px;font-size:.9rem}#dial{width:46px;height:46px}#hudBtns{gap:3px}#muteBtn,#pauseBtn{min-width:44px;min-height:44px;padding:4px 8px}#goalTxt{font-size:.8rem}}
+#loading{position:fixed;inset:0;z-index:50;background:var(--parch);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--sepia);font-size:1.4rem;font-weight:bold}
+#loading .sail{font-size:3rem;animation:tap 1s ease-in-out infinite}
+.pw{position:relative;display:inline-block}
+.hand{position:absolute;left:55%;top:58%;font-size:2.2rem;pointer-events:none;animation:tap 1s ease-in-out infinite;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+@keyframes tap{50%{transform:translate(-6px,-10px) scale(1.12)}}
+button.pulse{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08);box-shadow:0 0 0 8px rgba(244,180,0,.55)}}
+.actions{position:sticky;bottom:-12px;margin:6px -4px -12px;padding:8px 4px 12px;background:var(--parch);border-top:2px dashed var(--sepia)}
+.card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92%,420px);max-height:94%;overflow:auto;background:var(--parch);border:4px solid var(--sepia);border-radius:24px;padding:18px 20px;text-align:center;box-shadow:0 8px 0 rgba(122,85,48,.35);touch-action:pan-y pinch-zoom}
+.card h1{margin:0 0 4px;font-size:2.1rem;color:var(--sepia)}
+.card p{margin:6px 0}
+.hint{font-size:.95rem;color:var(--sepia)}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.chip{width:46px;height:46px;border-radius:50%;padding:0;font-size:1.2rem;font-weight:bold}
+.chip.on{background:var(--coral);color:#fff;border-color:#a8412f;box-shadow:0 3px 0 #a8412f}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+#panel{flex:0 0 46%;min-height:0;overflow:auto;background:var(--parch);border-top:4px solid var(--sepia);padding:12px 14px;touch-action:pan-y pinch-zoom}
+@media (orientation:landscape){#stage{flex-direction:row}#panel{flex:0 0 min(420px,42vw);border-top:0;border-left:4px solid var(--sepia)}}
+#panel h2{margin:0 0 8px;color:var(--sepia)}
+.award{display:flex;align-items:center;gap:10px;background:#fff8e4;border:2px solid var(--sepia);border-radius:16px;padding:8px 12px;margin:6px 0;opacity:0;transform:translateY(12px);animation:pop .5s forwards}
+.award .ic{font-size:1.8rem}
+.award small{display:block;color:var(--sepia)}
+@keyframes pop{to{opacity:1;transform:none}}
+svg.ic{vertical-align:-.22em;flex:none}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid var(--sepia);vertical-align:middle;margin-right:4px}
+.brow{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:12px;margin:4px 0;background:#fff8e4;border:2px solid transparent}
+.brow.me{border-color:var(--coral)}
+.brow .nm{flex:1;margin-left:6px}
+.brow .bd{font-size:.8rem;color:var(--sepia);margin-left:8px}
+.brow b{font-size:1.2rem}
+#pc{display:flex;gap:12px;align-items:center;margin:10px 0;flex-wrap:wrap}
+#pcv{border-radius:6px;box-shadow:0 3px 8px rgba(0,0,0,.3)}
+#atlasGrid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:10px 0}
+</style>
+</head>
+<body>
+<div id="loading"><div class="sail"><svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="#3b2a1a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15h18l-3 5H6z" fill="#ff6f59"/><path d="M12 3v11H6z" fill="#fff6dc"/><path d="M13 6v8h5z" fill="#1fa6a0"/></svg></div><div>Inkwake Relay…</div></div>
+<div id="stage">
+  <div id="view">
+    <canvas id="cv"></canvas>
+    <div id="hud" class="hidden">
+      <div id="hudRow">
+        <canvas id="dial" width="112" height="112"></canvas>
+        <div id="scoreBox"><span id="scIc"></span> <span id="sc">0</span><span id="rk"></span></div>
+        <div id="sparkInfo"><span id="spIc"></span><span id="spTx"></span></div>
+        <div id="hudBtns"><button id="muteBtn"></button><button id="pauseBtn" aria-label="Pause"></button></div>
+      </div>
+      <div id="goalRow"><div id="goalTxt"></div><div id="bar"><i id="barAll"></i><i id="barMe"></i></div></div>
+      <button id="skipTip" class="hidden"></button>
+    </div>
+    <div id="title" class="card">
+      <h1 id="tTitle"></h1>
+      <p style="margin:0" id="tArt"></p>
+      <p class="hint" id="tHint1"></p>
+      <p class="hint" id="tHint2"></p>
+      <div class="row"><span class="pw"><button class="big" id="playBtn"></button><span class="hand hidden" id="tHand"></span></span><button id="atlasBtn"></button><button id="muteBtn2"></button></div>
+      <p><span id="tBoatIc"></span> <span id="tBoats"></span></p>
+      <div class="chips" id="chips"></div>
+      <p class="optlbl" id="mapLbl"></p>
+      <div class="chips" id="mapChips"></div>
+      <p class="optlbl" id="diffLbl"></p>
+      <div class="chips" id="diffChips"></div>
+      <p class="hint" style="font-size:.75rem;margin:10px 0 0">© 2026 DMK INTEGRATIONS - FZCO</p>
+    </div>
+    <div id="pauseCard" class="card hidden">
+      <h1 id="pTitle2"></h1>
+      <div class="row"><button class="big" id="resumeBtn"></button><button id="quitBtn"></button></div>
+    </div>
+    <div id="atlas" class="card hidden">
+      <h1 id="aTitle"></h1>
+      <p class="hint" id="aNote"></p>
+      <div id="atlasGrid"></div>
+      <div class="row"><button id="atlasBack"></button></div>
+    </div>
+  </div>
+  <div id="panel" class="hidden">
+    <h2 id="parTitle"></h2>
+    <div id="awards"></div>
+    <div id="board"></div>
+    <div id="pc">
+      <canvas id="pcv" width="150" height="262"></canvas>
+      <div><div class="hint" id="goldNote"></div><button id="goldAdBtn" class="hidden"></button></div>
+    </div>
+    <div class="row actions"><span class="pw"><button class="big" id="againBtn"></button><span class="hand hidden" id="aHand"></span></span><button id="menuBtn"></button><button id="atlasBtn2"></button></div>
+  </div>
+</div>
+<script>
+"use strict";
+/* ===== Strings: every user-visible word lives here ===== */
+const STR = {
+  title: 'Inkwake Relay', play: 'Play', boats: 'Boats', atlas: "Captain's Atlas",
+  hint1: 'Drag to steer your boat (keys: arrows or A/Q and D, P pauses)', hint2: 'Sail beside a lantern boat for 1 s to pass the spark',
+  pause: 'Paused', resume: 'Resume', quit: 'Quit', again: 'Sail again', back: 'Back',
+  you: 'You', parade: 'Parade', bell: 'Tide bell!',
+  awMap: 'Most map', awAssist: 'Best assist', awRelay: 'Longest relay', awSave: 'Last-second save',
+  goldAd: 'Gold ink postcard', atlasNote: 'Latest 24 postcards', goldEarned: 'First place: your postcard gets a gold border!',
+  adNone: 'Ad unavailable, try again in a moment', skipTips: 'Skip tips', slow: 'Slow water!', relayPop: 'Relay', pts: 'pts',
+  mapLbl: 'Map', diffLbl: 'Bots', mix: 'Mix', maps: ['Isles', 'Lanes', 'Atoll'], diffs: ['Easy', 'Normal'],
+  sets: ['Harbour', 'Hills', 'Shore'], mute: 'Sound off', unmute: 'Sound on', stayClose: 'Stay close!',
+  empty: 'No postcards yet', cells: 'Cells', lms: 'Landmarks', assists: 'Assists', relay: 'Relay',
+  menu: 'Menu', fogLifts: 'The fog lifts…', goalInk: 'Ink the fog map and find the landmarks!',
+  goalHold: 'Pass the spark: sail beside a boat!', goalChain: 'Relay going – keep inking!', goalWatch: 'Ink the map – help the lantern boat!',
+  sec: 's', cellsWord: 'cells', links: 'boats', postcard: 'Postcard',
+  animals: [
+    { n: 'Fox' }, { n: 'Duck' }, { n: 'Bear' }, { n: 'Frog' },
+    { n: 'Cat' }, { n: 'Owl' }, { n: 'Pig' }, { n: 'Panda' }
+  ]
+};
+
+/* ===== Icons: small inline SVGs in the same ink-and-parchment style as the canvas art (no emoji, same look on every device) ===== */
+const ICONS = {
+  boat: '<path d="M3 15h18l-3 5H6z" fill="#ff6f59"/><path d="M12 3v11H6z" fill="#fff6dc"/><path d="M13 6v8h5z" fill="#1fa6a0"/>',
+  fog: '<path d="M7 18a4 4 0 010-8 5 5 0 019.5-1A3.5 3.5 0 0117 18z" fill="#e8e0cc"/>',
+  map: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" fill="#f6ecd2"/><path d="M9 4v14M15 6v14"/>',
+  hand: '<path d="M10 3.5a1.6 1.6 0 013.2 0V11h1.6a2.2 2.2 0 012.2 2.2V15a5.5 5.5 0 01-5.5 5.5h-.6a5 5 0 01-4-2L5 14.5l1.4-1.2L10 15.5z" fill="#fff6dc"/>',
+  lantern: '<path d="M9 3h6M12 3v2M9 21h6"/><rect x="7" y="5" width="10" height="14" rx="4.5" fill="#ffd23a"/>',
+  link: '<circle cx="8.5" cy="12" r="4.5" fill="#f6ecd2"/><circle cx="15.5" cy="12" r="4.5" fill="none"/>',
+  assist: '<circle cx="7" cy="12" r="3.8" fill="#1fa6a0"/><circle cx="17" cy="12" r="3.8" fill="#ff6f59"/><path d="M10.8 12h2.4"/>',
+  clock: '<circle cx="12" cy="13.5" r="8" fill="#fff6dc"/><path d="M12 8.5v5l3 2M10 3h4"/>',
+  star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8z" fill="#f4b400"/>',
+  book: '<path d="M4 5h6.5a1.5 1.5 0 011.5 1.5V19a3 3 0 00-3-1H4zM20 5h-6.5A1.5 1.5 0 0012 6.5V19a3 3 0 013-1h5z" fill="#f6ecd2"/>',
+  home: '<path d="M3 12l9-8 9 8M6 10v10h12V10" fill="#f6ecd2"/>',
+  on: '<path d="M4 9h4l5-4v14l-5-4H4z" fill="#f6ecd2"/><path d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11"/>',
+  off: '<path d="M4 9h4l5-4v14l-5-4H4z" fill="#f6ecd2"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>',
+  play: '<path d="M7 4.5l12 7.5-12 7.5z" fill="currentColor"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  pause: '<path d="M8.5 5v14M15.5 5v14" stroke-width="3.6"/>'
+};
+function ic(n, size) {
+  return '<svg class="ic" data-ic="' + n + '" viewBox="0 0 24 24" width="' + (size || '1.2em') + '" height="' + (size || '1.2em') + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n] + '</svg>';
+}
+
+/* ===== Config ===== */
+const W = 48, H = 72;                     // coarse grid cells (not pixels): keeps multiplayer sync simple
+const CFG = {
+  ROUND: 180, EASY_SPEED: .72, GUIDED_ROUND: 90, GUIDED_CAP: 120, SKIP_LEFT: 60, FREEPLAY: 15, STEP: 1 / 30, SPEED: 4.2, TURN: 2.6, INK_R: 1.8,
+  LM_R: 3.2, LM_PTS: 25, ASSIST_PTS: 10, CHAIN_PTS: 2, CHAIN_CAP: 16, DISCOVER_R: 9,
+  SPARK_TTL: 14, SPARK_GAP: 55, ALONG: 2.8, PASS_TIME: 1, SAVE_MARGIN: 5,
+  GIANT_R: 5, GIANT_SLOW: 0.45
+};
+const INK = ['#1fa6a0', '#ff6f59', '#f4b400', '#8e4585', '#3b78c4', '#5da13f', '#e0709e', '#5a6b7b'];
+const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const INKRGB = INK.map(hex);
+const FUR = ['#e8803a', '#ffd84a', '#a8714a', '#7cc255', '#b9b3a8', '#8c6b4f', '#f6a9b8', '#f4f4f0'];
+const EARS = ['point', 'beak', 'round', 'eyes', 'point', 'tuft', 'round', 'round'];
+
+/* ===== Helpers ===== */
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const fmtTime = t => { t = Math.max(0, Math.ceil(t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+
+/* ===== Map generation (round hand-sketched islands) ===== */
+/* layout 0 = Isles (scattered), 1 = Lanes (staggered rows, channels between), 2 = Atoll (ring of islands round a lagoon);
+   lmSet 0..2 picks which three landmark drawings are used this round. */
+function genMap(seed, layout = 0, lmSet = 0) {
+  const r = mulberry32(seed);
+  const land = new Uint8Array(W * H);
+  const centers = [];
+  const addIsland = (cx, cy, spread, size) => {
+    const blobs = 3 + (r() * 3 | 0);
+    for (let k = 0; k < blobs; k++) {
+      const a = r() * 6.283, d = r() * 4.5 * spread;
+      const bx = cx + Math.cos(a) * d, by = cy + Math.sin(a) * d, br = (2.5 + r() * 3.2) * size;
+      const p1 = r() * 6.283, p2 = r() * 6.283;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const dx = x + .5 - bx, dy = y + .5 - by;
+        if (Math.abs(dx) > br * 1.5 || Math.abs(dy) > br * 1.5) continue;
+        const ang = Math.atan2(dy, dx);
+        const rr = br * (1 + .2 * Math.sin(ang * 3 + p1) + .1 * Math.sin(ang * 5 + p2));
+        if (Math.hypot(dx, dy) < rr) land[y * W + x] = 1;
+      }
+    }
+  };
+  if (layout === 1) {
+    [[12, 9], [34, 9], [23, 22], [12, 35], [34, 35], [23, 48]].forEach(c => { const cx = c[0] + (r() - .5) * 3, cy = c[1] + (r() - .5) * 3; centers.push([cx, cy]); addIsland(cx, cy, .6, .85); });
+  } else if (layout === 2) {
+    const ph = r() * 6.283;
+    for (let k = 0; k < 5; k++) { const a = ph + k * 6.283 / 5, cx = 24 + Math.cos(a) * 14, cy = 30 + Math.sin(a) * 17; centers.push([cx, cy]); addIsland(cx, cy, .6, .9); }
+    if (r() < .5) { centers.push([24, 30]); addIsland(24, 30, .4, .6); }
+  } else {
+    const want = 6 + (r() * 3 | 0);
+    for (let tries = 0; centers.length < want && tries < 300; tries++) {
+      const cx = 8 + r() * (W - 16), cy = 8 + r() * (H - 28);
+      if (centers.some(c => Math.hypot(c[0] - cx, c[1] - cy) < 13)) continue;
+      centers.push([cx, cy]);
+      addIsland(cx, cy, 1, 1);
+    }
+  }
+  for (let y = H - 12; y < H; y++) for (let x = 0; x < W; x++) land[y * W + x] = 0; // harbour waters
+  const L = (x, y) => x < 0 || y < 0 || x >= W || y >= H ? 0 : land[y * W + x];
+  const coast = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if (land[y * W + x] && (!L(x + 1, y) || !L(x - 1, y) || !L(x, y + 1) || !L(x, y - 1))) coast[y * W + x] = 1;
+  // water reachable from the harbour
+  const reach = new Uint8Array(W * H), q = [(H - 3) * W + 24]; reach[q[0]] = 1;
+  while (q.length) {
+    const i = q.pop(), x = i % W, y = i / W | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+      const j = ny * W + nx;
+      if (!land[j] && !reach[j]) { reach[j] = 1; q.push(j); }
+    }
+  }
+  const nearReach = (x, y) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < W && ny < H && reach[ny * W + nx]) return true; } return false; };
+  const cand = [];
+  for (let y = 3; y < H - 14; y++) for (let x = 3; x < W - 3; x++) if (coast[y * W + x] && nearReach(x, y)) cand.push([x + .5, y + .5]);
+  const lms = [];
+  for (let k = 0; k < 400 && lms.length < 6 && cand.length; k++) {
+    const c = cand[r() * cand.length | 0];
+    if (lms.every(l => Math.hypot(l.x - c[0], l.y - c[1]) > 11)) lms.push({ x: c[0], y: c[1], type: lmSet * 3 + lms.length % 3, by: -1 });
+  }
+  const giants = [];
+  for (let k = 0; k < 600 && giants.length < 4; k++) {
+    const x = 4 + r() * (W - 8), y = 4 + r() * (H - 8);
+    if (!reach[(y | 0) * W + (x | 0)] || Math.hypot(x - 24, y - 69) < 16) continue;
+    if (giants.some(g => Math.hypot(g.x - x, g.y - y) < 12)) continue;
+    giants.push({ x, y, kind: giants.length % 2 ? 'turtle' : 'whale', ph: r() * 6 });
+  }
+  const noise = new Uint8Array(W * H); for (let i = 0; i < noise.length; i++) noise[i] = r() * 256;
+  let inkable = 0; // cells a boat can actually colour (goal bar denominator)
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (nearReach(x, y)) inkable++;
+  return { land, coast, lms, giants, noise, reach, inkable };
+}
+
+/* ===== Simulation (no DOM; a network layer can drive it in v2) ===== */
+function score(b) { return b.cells + b.lms * CFG.LM_PTS + b.assists * CFG.ASSIST_PTS + b.relayPts; }
+function isWater(s, x, y) { if (x < .3 || y < .3 || x > W - .3 || y > H - .3) return false; return !s.map.land[(y | 0) * W + (x | 0)]; }
+function nearGiant(s, x, y) { for (const g of s.map.giants) if (Math.hypot(g.x - x, g.y - y) < CFG.GIANT_R + .5) return true; return false; }
+
+/* Controller interface: desired(boat, sim, dt) -> heading in radians, or null to keep course.
+   v1 uses LocalCtrl (player) and BotCtrl. v2: a RemoteCtrl fed by network input replaces BotCtrl. */
+function makeSim(n, seed, o = {}) {
+  const s = {
+    seed, t: 0, len: o.len || CFG.ROUND, layout: o.layout || 0, lmSet: o.lmSet || 0, map: genMap(seed, o.layout || 0, o.lmSet || 0), owner: new Uint8Array(W * H), inked: 0, boats: [],
+    spark: null, sparkIdle: 0, passes: [], chains: [], events: [], done: false, dirty: true, guided: false
+  };
+  for (let i = 0; i < n; i++) {
+    s.boats.push({
+      id: i, name: STR.animals[i].n, color: INK[i], x: 24 + (i - (n - 1) / 2) * 3.4, y: 69, h: -Math.PI / 2,
+      cells: 0, lms: 0, assists: 0, relayPts: 0, slow: 1, speed: 1, blocked: false, trail: [], trailT: 0, ctrl: null
+    });
+  }
+  return s;
+}
+function escSide(s, b) {                              // which way to turn to face the most open water (+1 / -1)
+  let p = 0, m = 0;
+  for (let k = 1; k <= 8; k++) for (const d of [2, 4, 6]) {
+    if (isWater(s, b.x + Math.cos(b.h + k * .2) * d, b.y + Math.sin(b.h + k * .2) * d)) p += 1 / k;
+    if (isWater(s, b.x + Math.cos(b.h - k * .2) * d, b.y + Math.sin(b.h - k * .2) * d)) m += 1 / k;
+  }
+  return m > p ? -1 : 1;
+}
+function move(s, b, dx, dy, dt) {
+  const nx = b.x + dx, ny = b.y + dy; b.blocked = false;
+  if (b.escT > 0) {                                       // an escape turn in progress keeps going, even if a slide works, until open water is ahead
+    b.escT -= dt; b.h = wrap(b.h + b.esc * CFG.TURN * dt);
+    if (b.escT < 1 && isWater(s, b.x + Math.cos(b.h) * 4, b.y + Math.sin(b.h) * 4) && isWater(s, b.x + Math.cos(b.h) * 2, b.y + Math.sin(b.h) * 2)) b.escT = 0;
+  }
+  if (isWater(s, nx, ny)) { b.x = nx; b.y = ny; return; }
+  const L = Math.hypot(dx, dy) * .25;                     // a slide along one axis only counts if it really moves the boat
+  if (Math.abs(dx) > L && isWater(s, nx, b.y)) { b.x = nx; return; }
+  if (Math.abs(dy) > L && isWater(s, b.x, ny)) { b.y = ny; return; }
+  const rescue = !(b.escT > 0); if (rescue) b.esc = escSide(s, b);
+  b.escT = 1.3;                                           // head-on in a corner: steering is ignored while the boat turns away from land
+  for (const a of [Math.PI / 4, -Math.PI / 4]) {          // never park on a coast: try the step turned by +45 / -45 degrees
+    const c = Math.cos(a), sn = Math.sin(a), rx = b.x + dx * c - dy * sn, ry = b.y + dx * sn + dy * c;
+    if (isWater(s, rx, ry)) { b.x = rx; b.y = ry; return; }
+  }
+  b.blocked = true;
+  b.h = wrap(b.h + b.esc * CFG.TURN * dt);                // still blocked: turn the heading away from land, no input needed
+}
+function ink(s, b) {
+  const R = CFG.INK_R;
+  for (let y = Math.max(0, Math.floor(b.y - R)); y <= Math.min(H - 1, Math.floor(b.y + R)); y++)
+    for (let x = Math.max(0, Math.floor(b.x - R)); x <= Math.min(W - 1, Math.floor(b.x + R)); x++) {
+      const dx = x + .5 - b.x, dy = y + .5 - b.y, i = y * W + x;
+      if (dx * dx + dy * dy <= R * R && !s.owner[i]) { s.owner[i] = b.id + 1; b.cells++; s.inked++; s.dirty = true; }
+    }
+}
+function giveSpark(s, b) { s.spark = { holder: b.id, chain: [b.id], ttl: CFG.SPARK_TTL, link: null }; s.events.push({ type: 'spark', b }); }
+function endChain(s) {
+  if (!s.spark) return;
+  s.chains.push({ ids: s.spark.chain.slice() });
+  s.spark = null; s.sparkIdle = 0;
+}
+function passSpark(s, to) {
+  const sp = s.spark, from = s.boats[sp.holder];
+  const margin = Math.min(sp.ttl, s.len - s.t);
+  sp.chain.push(to.id);
+  const n = sp.chain.length;
+  from.assists++;
+  for (const id of sp.chain) { const rb = s.boats[id]; rb.relayPts = Math.min(CFG.CHAIN_CAP, rb.relayPts + CFG.CHAIN_PTS * (n - 1)); } // capped: map inking stays the main score
+  s.passes.push({ from: from.id, to: to.id, n, t: s.t, margin });
+  s.events.push({ type: 'pass', from, to, n });
+  sp.holder = to.id; sp.ttl = CFG.SPARK_TTL; sp.link = null;
+  if (n >= s.boats.length) endChain(s);
+}
+function sparkStep(s, dt) {
+  const sp = s.spark;
+  if (!sp) {
+    s.sparkIdle += dt;
+    if (s.sparkIdle > CFG.SPARK_GAP && s.t < s.len - 15) { // harbour lantern helps whoever is behind
+      let low = s.boats[0]; for (const b of s.boats) if (score(b) < score(low)) low = b;
+      giveSpark(s, low);
+    }
+    return;
+  }
+  sp.ttl -= dt;
+  if (sp.ttl <= 0) { endChain(s); return; }
+  const h = s.boats[sp.holder];
+  let best = null, bd = 1e9;
+  for (const o of s.boats) {
+    if (o === h || sp.chain.includes(o.id)) continue;
+    const d = dist(o, h);
+    const lim = sp.link && sp.link.id === o.id ? CFG.ALONG * 1.5 : CFG.ALONG; // small hysteresis
+    if (d < lim && d < bd) { best = o; bd = d; }
+  }
+  if (!best) { if (sp.link && sp.link.t > .25) s.events.push({ type: 'slip', h, o: s.boats[sp.link.id] }); sp.link = null; return; }
+  if (sp.link && sp.link.id === best.id) sp.link.t += dt; else sp.link = { id: best.id, t: dt };
+  if (sp.link.t >= CFG.PASS_TIME) passSpark(s, best);
+}
+function step(s, dt) {
+  if (s.done) return;
+  s.t += dt;
+  for (const b of s.boats) {
+    const des = b.ctrl.desired(b, s, dt);
+    if (des != null && !(b.escT > 0)) { const m = CFG.TURN * dt; b.h = wrap(b.h + Math.max(-m, Math.min(m, wrap(des - b.h)))); }
+    b.slow = 1;
+    for (const g of s.map.giants) if (Math.hypot(g.x - b.x, g.y - b.y) < CFG.GIANT_R) { b.slow = CFG.GIANT_SLOW; break; }
+    const v = CFG.SPEED * b.speed * b.slow * dt;
+    move(s, b, Math.cos(b.h) * v, Math.sin(b.h) * v, dt);
+    ink(s, b);
+    for (const lm of s.map.lms) if (lm.by < 0 && Math.hypot(lm.x - b.x, lm.y - b.y) < CFG.LM_R) {
+      lm.by = b.id; b.lms++; s.events.push({ type: 'lm', b, lm }); s.dirty = true;
+      if (!s.spark) giveSpark(s, b);
+    }
+    b.trailT += dt;
+    if (b.trailT > .1) { b.trailT = 0; b.trail.push({ x: b.x, y: b.y }); if (b.trail.length > 14) b.trail.shift(); }
+  }
+  sparkStep(s, dt);
+  if (s.t >= s.len) { s.t = s.len; s.done = true; endChain(s); s.events.push({ type: 'end' }); }
+}
+function ranked(s) { return s.boats.slice().sort((a, b) => score(b) - score(a) || a.id - b.id); }
+
+/* ===== Bots (stand in for remote players in v1) ===== */
+function BotCtrl(skill, seed, diff = 1) {   // diff 0 = easy (slower, less keen, readier to help), 1 = normal
+  const r = mulberry32(seed);
+  const helpP = diff === 0 ? .3 : .12;
+  if (diff === 0) skill *= .4;
+  let target = null, retarget = 0, lastSpark = null, help = true;
+  const known = new Set();                // landmarks this bot has discovered by sailing close (it is never told where they are)
+  const unrev = (s, x, y) => {
+    let c = 0;
+    for (let dy = -4; dy <= 4; dy += 2) for (let dx = -4; dx <= 4; dx += 2) {
+      const nx = (x + dx) | 0, ny = (y + dy) | 0;
+      if (nx >= 0 && ny >= 0 && nx < W && ny < H && !s.owner[ny * W + nx]) c++;
+    }
+    return c * 2;
+  };
+  const avoid = (b, s, ang) => {
+    const offs = [0, .35, -.35, .7, -.7, 1.1, -1.1, 1.6, -1.6, 2.3, -2.3];
+    for (const useG of [true, false]) for (const o of offs) {
+      const a = ang + o; let ok = true;
+      for (const d of [1.5, 3, 5]) {
+        const px = b.x + Math.cos(a) * d, py = b.y + Math.sin(a) * d;
+        if (!isWater(s, px, py) || (useG && nearGiant(s, px, py) && !nearGiant(s, b.x, b.y))) { ok = false; break; }
+      }
+      if (ok) return a;
+    }
+    return ang + Math.PI * .8;
+  };
+  return {
+    desired(b, s, dt) {
+      retarget -= dt;
+      const sp = s.spark;
+      for (const lm of s.map.lms) if (lm.by < 0 && !known.has(lm) && Math.hypot(lm.x - b.x, lm.y - b.y) < CFG.DISCOVER_R) { known.add(lm); retarget = 0; }
+      if (sp !== lastSpark) { lastSpark = sp; help = s.guided || r() < helpP; }
+      let pace = null;
+      if (sp) {
+        const holder = s.boats[sp.holder];
+        if (holder === b) {
+          let bd = 1e9;
+          for (const o of s.boats) if (!sp.chain.includes(o.id)) { const d = dist(o, b); if (d < bd) { bd = d; pace = o; } }
+          if (sp.ttl < 2 || (!s.guided && !help)) pace = null; // a bot holder only sometimes goes looking for a partner
+        } else if (help && !sp.chain.includes(b.id) && sp.ttl > 5 && dist(b, holder) < (s.guided ? 80 : 28)) pace = holder;
+      }
+      if (pace) { // close in, then match course and sail alongside
+        const d = dist(b, pace);
+        let ang;
+        if (d > 8) ang = Math.atan2(pace.y - b.y, pace.x - b.x);
+        else ang = Math.atan2(Math.sin(pace.h) + (pace.y - b.y) * .35, Math.cos(pace.h) + (pace.x - b.x) * .35);
+        return avoid(b, s, ang);
+      }
+      if (retarget <= 0 || !target || dist(b, target) < 2.5 || b.blocked) {
+        retarget = 1.5 + r() * 1.5;
+        let best = null, bs = -1e9;
+        const N = 6 + Math.floor(skill * 10);
+        for (let k = 0; k < N; k++) {
+          const x = 2 + r() * (W - 4), y = 2 + r() * (H - 4);
+          if (!isWater(s, x, y)) continue;
+          const d = Math.hypot(x - b.x, y - b.y);
+          const sc = unrev(s, x, y) - d * .4 + Math.cos(wrap(Math.atan2(y - b.y, x - b.x) - b.h)) * 3;
+          if (sc > bs) { bs = sc; best = { x, y }; }
+        }
+        for (const lm of known) if (lm.by < 0) {
+          const d = Math.hypot(lm.x - b.x, lm.y - b.y);
+          if (d < 30 && r() < .6 * skill + .2 && 60 - d * .8 > bs) { bs = 60 - d * .8; best = { x: lm.x, y: lm.y }; }
+        }
+        target = best || { x: 24, y: 30 };
+      }
+      return avoid(b, s, Math.atan2(target.y - b.y, target.x - b.x));
+    }
+  };
+}
+
+/*==UI==*/
+/* ===== Rendering & UI (DOM) ===== */
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d'), view = $('view');
+const SEPIA = '#7a5530';
+const tex = document.createElement('canvas'); tex.width = W; tex.height = H;
+const tctx = tex.getContext('2d'), timg = tctx.createImageData(W, H);
+const WATER = [205, 230, 222], LAND = [222, 196, 140], COAST = [150, 110, 60], FOG = [236, 226, 200];
+const WATERP = [226, 236, 226], LANDP = [232, 218, 184];
+
+let sim = null, state = 'title', nBoats = 5, countdown = 0, fogLift = 0, bellT = 0, fogT = 0;
+let parts = [], rings = [], arcs = [], lastCells = 0, lastScore = -1;
+const FOG_SHOW = 2.4;                   // seconds of visible fog lift before the parade panel
+let vw = 0, vh = 0, dpr = 1, cs = 8, ox = 0, oy = 0, fx = [], clock = 0, gameCount = 0;
+let current = null;                     // postcard record of the round just finished
+const input = { touch: false, ang: null, ax: 0, ay: 0, px: 0, py: 0, mouse: false, tx: 0, ty: 0, L: 0, R: 0 };
+
+function resetInput() { Object.assign(input, { touch: false, ang: null, mouse: false, L: 0, R: 0 }); }
+const LocalCtrl = {
+  desired(b) {
+    if (input.touch && input.ang != null) return input.ang;
+    if (input.mouse && Math.hypot(input.tx - b.x, input.ty - b.y) > 1.2) return Math.atan2(input.ty - b.y, input.tx - b.x);
+    if (input.L || input.R) return b.h + (input.R - input.L) * 1.2;
+    return null;
+  }
+};
+
+/* --- atlas storage (localStorage, memory fallback) --- */
+const KEY = 'inkwake.atlas.v1';
+let atlasMem = [];
+function atlasLoad() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return atlasMem; } }
+const ATLAS_MAX = 24;
+function atlasSave(a) {
+  atlasMem = a;
+  for (;;) {                                   // quota full: drop the oldest postcard and try again (never the newest one)
+    try { localStorage.setItem(KEY, JSON.stringify(a)); return; } catch (e) { if (a.length <= 1) return; a.pop(); }   // storage blocked: memory only
+  }
+}
+
+/* --- first-time guidance (wordless: pulsing hand on exactly the next action; progress saved) --- */
+const TKEY = 'inkwake.tut.v2', TUT_N = 4;   // steps: 0 steer, 1 ink a cell, 2 light a landmark, 3 pass the spark
+let tutMem = 0;
+function tutLoad() { try { const v = parseInt(localStorage.getItem(TKEY) || '0', 10); return isNaN(v) ? tutMem : v; } catch (e) { return tutMem; } }
+function tutSave(n) { tutMem = n; try { localStorage.setItem(TKEY, String(n)); } catch (e) { /* storage blocked: this session only */ } }
+let tutStep = tutLoad(), tutSteer = 0, tutTgt = null, tutFlash = 0, tutBest = 1e9, tutStall = 0; const tutSkip = new Set();
+const tutOn = () => tutStep < TUT_N;
+function pickInk(s, me, any) {          // a free, reachable water cell about 9 cells ahead (any: just the nearest one)
+  let best = null, bs = 1e9;
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const i = y * W + x; if (s.owner[i] || s.map.land[i] || !s.map.reach[i]) continue;
+    const d = Math.hypot(x + .5 - me.x, y + .5 - me.y);
+    if (!any && (d < 6 || nearGiant(s, x + .5, y + .5))) continue;
+    const sc = any ? d : Math.abs(d - 9) + Math.abs(wrap(Math.atan2(y + .5 - me.y, x + .5 - me.x) - me.h)) * 3;
+    if (sc < bs) { bs = sc; best = { x: x + .5, y: y + .5, i }; }
+  }
+  return best;
+}
+function nearestOf(list, me) { let best = null, bd = 1e9; for (const o of list) { const d = dist(o, me); if (d < bd) { bd = d; best = o; } } return best; }
+function tutAdvance() {
+  tutStep++; tutTgt = null; tutSave(tutStep); tutFlash = 1.3;
+  const me = sim.boats[0]; burst(ox + me.x * cs, oy + me.y * cs, '#ffd23a', 18, 140);
+  rings.push({ x: ox + me.x * cs, y: oy + me.y * cs, age: 0, life: .8, color: '#ffd23a' });
+  if (tutStep === 3 && (!sim.spark || sim.spark.holder !== 0)) { endChain(sim); giveSpark(sim, me); } // make sure the player holds the spark
+  if (!tutOn()) { sim.guided = false; sim.len = Math.min(sim.len, sim.t + CFG.FREEPLAY); show('skipTip', false); } // lesson done: a short free-play window, then the round ends
+}
+function tutSkipAll() {                  // the player skips the how-to: lesson counts as done, round continues as normal play
+  tutStep = TUT_N; tutTgt = null; tutSave(TUT_N); show('skipTip', false);
+  if (sim) { sim.guided = false; sim.len = Math.min(CFG.ROUND, sim.t + CFG.SKIP_LEFT); }   // a first-session skipper keeps a short window (at most 60 s more) so the first round finishes
+}
+function tutTick(dt) {
+  if (!tutOn() || !sim || sim.done) return;
+  const s = sim, me = s.boats[0];
+  if (s.guided && s.t > CFG.GUIDED_CAP) { tutSkipAll(); return; }     // hard cap: a stuck first-timer is moved on after 120 s
+  if (s.len - s.t < 15) s.len = s.t + 15;                              // the round never ends in the middle of the lesson
+  if (tutStep === 0) { tutTgt = me; if (LocalCtrl.desired(me) != null && (tutSteer += dt) > .4) tutAdvance(); }
+  else if (tutStep === 1) {
+    if (tutTgt && s.owner[tutTgt.i] === 1) tutAdvance();
+    else if (!tutTgt || s.owner[tutTgt.i]) {                           // a bot got it first: choose another
+      tutTgt = pickInk(s, me) || pickInk(s, me, true);
+      if (!tutTgt) tutAdvance();                                       // no free water left: nothing to teach, go on
+    }
+  } else if (tutStep === 2) {
+    if (tutTgt) {                                                      // stalled (walls in the way)? try another landmark
+      const d = dist(tutTgt, me);
+      if (d < tutBest - 1.5) { tutBest = d; tutStall = 0; } else if ((tutStall += dt) > 12) { tutSkip.add(tutTgt); tutTgt = null; tutStall = 0; tutBest = 1e9; }
+    }
+    if (!tutTgt || tutTgt.by >= 0) {
+      const free = s.map.lms.filter(l => l.by < 0);
+      tutTgt = nearestOf(free.filter(l => !tutSkip.has(l)), me) || (tutSkip.clear(), nearestOf(free, me));
+      tutBest = 1e9; tutStall = 0;
+      if (!tutTgt) tutAdvance();                                       // nothing left to light: go on to the hand-off
+    }
+  } else if (tutStep === 3) {
+    if (!s.spark) giveSpark(s, me);
+    if (s.spark.holder === 0 && s.spark.ttl < 10) s.spark.ttl = 10;    // the lesson never times out
+    tutTgt = nearestOf(s.boats.filter(b => b !== me && !(s.spark && s.spark.chain.includes(b.id))), me);
+  }
+}
+function tutTarget() { return tutOn() && sim && state === 'play' ? tutTgt : null; }
+
+/* --- juice: particles, rings, arcs --- */
+function burst(x, y, color, n, speed) {
+  for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, v = speed * (.4 + Math.random() * .6); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, age: 0, life: .6 + Math.random() * .5, color, r: 2 + Math.random() * 3 }); }
+}
+function arcPt(a, b, t) {               // quadratic arc lifted above the straight line between two boats
+  const ax = ox + a.x * cs, ay = oy + a.y * cs, bx = ox + b.x * cs, by = oy + b.y * cs;
+  const mx = (ax + bx) / 2, my = (ay + by) / 2 - Math.max(34, Math.hypot(bx - ax, by - ay) * .5), u = 1 - t;
+  return { x: u * u * ax + 2 * u * t * mx + t * t * bx, y: u * u * ay + 2 * u * t * my + t * t * by };
+}
+function drawArc(c, a, b, frac, alpha) {
+  if (frac <= 0) return;
+  c.save(); c.globalAlpha = alpha; c.lineCap = 'round';
+  for (const [w, col] of [[9, 'rgba(255,255,255,.7)'], [4, '#f0a500']]) {
+    c.strokeStyle = col; c.lineWidth = w; c.beginPath();
+    for (let k = 0; k <= 24; k++) { const p = arcPt(a, b, frac * k / 24); if (k) c.lineTo(p.x, p.y); else c.moveTo(p.x, p.y); }
+    c.stroke();
+  }
+  c.restore();
+}
+function drawHand(c, x, y, t) {         // pulsing ring + bobbing pointing hand
+  const u = Math.max(cs * 1.15, 9), k = (Math.sin(t * 6) + 1) / 2;
+  c.save(); c.strokeStyle = 'rgba(255,210,58,' + (.95 - k * .45).toFixed(2) + ')'; c.lineWidth = 4; c.beginPath(); c.arc(x, y, u * (1.5 + k * .9), 0, 7); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, u * 1.4, 0, 7); c.stroke();
+  // pointing hand drawn from paths (same ink style as the rest of the art)
+  const hs = Math.max(30, u * 2.6) / 24, hx = x + u * .3 - 12 * hs, hy = y + u * 1.4 + k * 8;
+  c.translate(hx, hy); c.scale(hs, hs); c.lineJoin = 'round'; c.lineCap = 'round'; c.lineWidth = 1.8; c.strokeStyle = '#3b2a1a'; c.fillStyle = '#fff6dc';
+  c.beginPath(); c.moveTo(10, 3.5); c.quadraticCurveTo(11.6, 1.2, 13.2, 3.5); c.lineTo(13.2, 11); c.lineTo(14.8, 11); c.quadraticCurveTo(17, 11, 17, 13.2); c.lineTo(17, 15);
+  c.quadraticCurveTo(17, 20.5, 11.5, 20.5); c.lineTo(10.9, 20.5); c.quadraticCurveTo(8, 20.5, 6.9, 18.5); c.lineTo(5, 14.5); c.lineTo(6.4, 13.3); c.lineTo(10, 15.5); c.closePath(); c.fill(); c.stroke();
+  c.restore();
+}
+
+/* --- layout --- */
+function layout() {
+  const r = view.getBoundingClientRect();
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  vw = r.width; vh = r.height;
+  cv.width = Math.max(1, Math.round(vw * dpr)); cv.height = Math.max(1, Math.round(vh * dpr));
+  const top = (state === 'play' || state === 'pause' || state === 'fog') ? 100 : 8;
+  cs = Math.max(1, Math.min(vw / W, (vh - top - 8) / H));
+  ox = (vw - W * cs) / 2; oy = top + (vh - top - 8 - H * cs) / 2;
+}
+new ResizeObserver(layout).observe(view);
+window.addEventListener('resize', layout);
+
+/* --- texture --- */
+function updateTex(s, fl) {
+  const d = timg.data, m = s.map;
+  for (let i = 0; i < W * H; i++) {
+    const o = s.owner[i], nz = (m.noise[i] - 128) / 128 * 6, land = m.land[i];
+    let c0, c1, c2;
+    if (o) {
+      const ic = INKRGB[o - 1];
+      const base = land ? (m.coast[i] ? COAST : LAND) : WATER, k = land ? (m.coast[i] ? .25 : .4) : .62;
+      c0 = base[0] + (ic[0] - base[0]) * k; c1 = base[1] + (ic[1] - base[1]) * k; c2 = base[2] + (ic[2] - base[2]) * k;
+    } else if (fl > 0) {
+      const p = land ? LANDP : WATERP;
+      c0 = FOG[0] + (p[0] - FOG[0]) * fl; c1 = FOG[1] + (p[1] - FOG[1]) * fl; c2 = FOG[2] + (p[2] - FOG[2]) * fl;
+    } else { c0 = FOG[0]; c1 = FOG[1]; c2 = FOG[2]; nz; }
+    const j = i * 4, n = o ? nz * .5 : nz * 1.6;
+    d[j] = c0 + n; d[j + 1] = c1 + n; d[j + 2] = c2 + n; d[j + 3] = 255;
+  }
+  tctx.putImageData(timg, 0, 0);
+}
+
+/* --- drawing primitives --- */
+function drawHead(c, x, y, r, i) {
+  const fur = FUR[i], k = EARS[i];
+  c.lineWidth = Math.max(1, r * .14); c.strokeStyle = SEPIA; c.fillStyle = fur;
+  const ear = (sx) => {
+    c.beginPath();
+    if (k === 'point') { c.moveTo(x + sx * r * .95, y - r * .2); c.lineTo(x + sx * r * .75, y - r * 1.35); c.lineTo(x + sx * r * .2, y - r * .8); }
+    else if (k === 'tuft') { c.moveTo(x + sx * r * .9, y - r * .4); c.lineTo(x + sx * r * .85, y - r * 1.25); c.lineTo(x + sx * r * .3, y - r * .8); }
+    else if (k === 'round') c.arc(x + sx * r * .75, y - r * .75, r * .38, 0, 7);
+    else c.arc(x + sx * r * .6, y - r * .85, r * .38, 0, 7);
+    c.fill(); c.stroke();
+  };
+  ear(-1); ear(1);
+  c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = k === 'eyes' ? '#fff' : '#2b1d10';
+  c.beginPath(); c.arc(x - r * .38, y - r * .1, r * (k === 'eyes' ? .26 : .15), 0, 7); c.arc(x + r * .38, y - r * .1, r * (k === 'eyes' ? .26 : .15), 0, 7); c.fill();
+  if (k === 'eyes') { c.fillStyle = '#2b1d10'; c.beginPath(); c.arc(x - r * .38, y - r * .1, r * .1, 0, 7); c.arc(x + r * .38, y - r * .1, r * .1, 0, 7); c.fill(); }
+  if (i === 1) { c.fillStyle = '#ff9a2e'; c.beginPath(); c.ellipse(x, y + r * .35, r * .5, r * .26, 0, 0, 7); c.fill(); c.stroke(); }
+  else if (i === 6) { c.fillStyle = '#e6788c'; c.beginPath(); c.ellipse(x, y + r * .3, r * .35, r * .25, 0, 0, 7); c.fill(); c.stroke(); }
+  else { c.fillStyle = '#2b1d10'; c.beginPath(); c.arc(x, y + r * .3, r * .13, 0, 7); c.fill(); }
+}
+function drawBoat(c, b, mine, t) {
+  const u = Math.max(cs * 1.15, 9) * (1 + .45 * (b.pop || 0)), x = ox + b.x * cs, y = oy + b.y * cs + Math.sin(t * 3 + b.id) * .8;
+  // wake
+  c.lineCap = 'round';
+  for (let i = 1; i < b.trail.length; i++) {
+    const p = b.trail[i - 1], q = b.trail[i];
+    c.strokeStyle = 'rgba(255,255,255,' + (i / b.trail.length * .55).toFixed(2) + ')'; c.lineWidth = u * .5 * i / b.trail.length + 1;
+    c.beginPath(); c.moveTo(ox + p.x * cs, oy + p.y * cs); c.lineTo(ox + q.x * cs, oy + q.y * cs); c.stroke();
+  }
+  c.save(); c.translate(x, y); c.rotate(b.h);
+  c.fillStyle = b.color; c.strokeStyle = mine ? '#fff' : SEPIA; c.lineWidth = mine ? 2.6 : 1.8;
+  c.beginPath(); c.moveTo(-u, -.55 * u); c.quadraticCurveTo(-.2 * u, -.78 * u, 1.1 * u, -.25 * u);
+  c.quadraticCurveTo(1.35 * u, 0, 1.1 * u, .25 * u); c.quadraticCurveTo(-.2 * u, .78 * u, -u, .55 * u);
+  c.quadraticCurveTo(-1.15 * u, 0, -u, -.55 * u); c.fill(); c.stroke();
+  c.fillStyle = '#fff6dc'; c.strokeStyle = SEPIA; c.lineWidth = 1.2;
+  c.beginPath(); c.ellipse(-.1 * u, 0, .22 * u, .5 * u, 0, 0, 7); c.fill(); c.stroke();
+  c.restore();
+  drawHead(c, x + Math.cos(b.h) * 1.15 * u, y + Math.sin(b.h) * 1.15 * u - u * .15, u * .5, b.id);
+  if (mine) { c.fillStyle = '#fff'; c.strokeStyle = SEPIA; c.lineWidth = 1.5; const ay = y - u * 1.9 + Math.sin(t * 5) * 2; c.beginPath(); c.moveTo(x, ay + 7); c.lineTo(x - 6, ay - 3); c.lineTo(x + 6, ay - 3); c.closePath(); c.fill(); c.stroke(); }
+}
+function drawLantern(c, x, y, r, t) {
+  const g = c.createRadialGradient(x, y, 1, x, y, r * 2.2);
+  g.addColorStop(0, 'rgba(255,240,150,.95)'); g.addColorStop(1, 'rgba(255,200,60,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r * (2 + Math.sin(t * 8) * .15), 0, 7); c.fill();
+  c.fillStyle = '#ffd23a'; c.strokeStyle = SEPIA; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, r * .6, 0, 7); c.fill(); c.stroke();
+}
+function drawLandmark(c, lm, s, t) {
+  const x = ox + lm.x * cs, y = oy + lm.y * cs, u = Math.max(cs * 1.6, 12), lit = lm.by >= 0;
+  if (lit) { const col = INK[lm.by]; const g = c.createRadialGradient(x, y, 2, x, y, u * 2.4); g.addColorStop(0, col + 'cc'); g.addColorStop(1, col + '00'); c.fillStyle = g; c.beginPath(); c.arc(x, y, u * 2.4 * (1 + Math.sin(t * 3) * .05), 0, 7); c.fill(); }
+  c.strokeStyle = SEPIA; c.lineWidth = 1.6; c.fillStyle = lit ? '#fff6dc' : '#d8c08c';
+  const set = lm.type / 3 | 0, v = lm.type % 3, green = lit ? '#8fd16a' : '#b9a878';
+  const poly = pts => { c.beginPath(); pts.forEach((p, k) => k ? c.lineTo(x + p[0] * u, y + p[1] * u) : c.moveTo(x + p[0] * u, y + p[1] * u)); c.closePath(); c.fill(); c.stroke(); };
+  if (set === 0) {          // harbour: lighthouse, hut, tree
+    if (v === 0) poly([[-.3, .5], [-.18, -.4], [.18, -.4], [.3, .5]]);
+    else if (v === 1) { c.beginPath(); c.rect(x - u * .35, y - u * .1, u * .7, u * .55); c.fill(); c.stroke(); poly([[-.5, -.1], [0, -.6], [.5, -.1]]); }
+    else { c.beginPath(); c.moveTo(x, y + u * .5); c.quadraticCurveTo(x + u * .1, y, x, y - u * .4); c.stroke(); c.fillStyle = green; c.beginPath(); c.arc(x, y - u * .5, u * .35, 0, 7); c.fill(); c.stroke(); }
+  } else if (set === 1) {   // hills: peak, windmill, stone arch
+    if (v === 0) { poly([[-.55, .5], [0, -.55], [.55, .5]]); c.fillStyle = '#fff'; poly([[-.17, -.2], [0, -.55], [.17, -.2], [.06, -.3], [-.06, -.18]]); }
+    else if (v === 1) { poly([[-.25, .5], [-.15, -.1], [.15, -.1], [.25, .5]]); c.fillStyle = lit ? '#ffd23a' : '#c8b27a'; poly([[0, -.1], [-.45, -.4], [-.3, -.5]]); poly([[0, -.1], [.45, .2], [.3, .3]]); poly([[0, -.1], [.3, -.5], [.45, -.4]]); }
+    else { c.beginPath(); c.rect(x - u * .5, y - u * .2, u * 1, u * .7); c.fill(); c.stroke(); c.fillStyle = lit ? '#bfe6e0' : '#a89870'; c.beginPath(); c.arc(x, y + u * .5, u * .26, Math.PI, 0); c.closePath(); c.fill(); c.stroke(); }
+  } else {                  // shore: palm, tent, anchor
+    if (v === 0) { c.beginPath(); c.moveTo(x - u * .1, y + u * .5); c.quadraticCurveTo(x + u * .2, y, x, y - u * .4); c.stroke(); c.fillStyle = green; for (const a of [-2.6, -1.57, -.55]) { c.beginPath(); c.ellipse(x + Math.cos(a) * u * .28, y - u * .4 + Math.sin(a) * u * .22, u * .3, u * .09, a, 0, 7); c.fill(); c.stroke(); } }
+    else if (v === 1) { poly([[-.5, .5], [0, -.5], [.5, .5]]); c.fillStyle = lit ? '#ff9a7a' : '#a89870'; poly([[-.12, .5], [0, -.05], [.12, .5]]); }
+    else { c.lineCap = 'round'; c.beginPath(); c.moveTo(x, y - u * .3); c.lineTo(x, y + u * .45); c.moveTo(x - u * .22, y - u * .1); c.lineTo(x + u * .22, y - u * .1); c.arc(x, y + u * .1, u * .4, 0, Math.PI); c.stroke(); c.beginPath(); c.arc(x, y - u * .42, u * .12, 0, 7); c.stroke(); }
+  }
+  c.fillStyle = lit ? '#ffd23a' : '#a08a60'; c.beginPath(); c.arc(x, y - u * (set === 0 && v === 0 ? .55 : .75), u * .2, 0, 7); c.fill(); c.stroke();
+}
+function drawGiant(c, g, t) {
+  const x = ox + g.x * cs, y = oy + g.y * cs + Math.sin(t * 1.2 + g.ph) * 2, u = cs * 1.6;
+  c.save(); c.setLineDash([4, 5]); c.strokeStyle = 'rgba(122,85,48,.3)'; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, CFG.GIANT_R * cs, 0, 7); c.stroke(); c.restore();
+  c.strokeStyle = SEPIA; c.lineWidth = 1.8;
+  if (g.kind === 'whale') {
+    c.fillStyle = '#7d9bb5'; c.beginPath(); c.ellipse(x, y, u * 1.5, u * .85, 0, 0, 7); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(x + u * 1.3, y); c.quadraticCurveTo(x + u * 2.1, y - u * .9, x + u * 2.4, y - u * .3); c.quadraticCurveTo(x + u * 2, y, x + u * 2.4, y + u * .5); c.quadraticCurveTo(x + u * 2.1, y + u * .1, x + u * 1.3, y + u * .2); c.fill(); c.stroke();
+    c.fillStyle = '#eef3f4'; c.beginPath(); c.ellipse(x - u * .2, y + u * .4, u * 1, u * .3, 0, 0, 7); c.fill();
+    c.beginPath(); c.arc(x - u * .8, y - u * .1, u * .22, .2, Math.PI - .2); c.stroke();
+  } else {
+    c.fillStyle = '#6fa56a'; c.beginPath(); c.ellipse(x, y, u * 1.2, u * 1, 0, 0, 7); c.fill(); c.stroke();
+    c.strokeStyle = 'rgba(60,80,40,.6)'; c.beginPath(); c.moveTo(x - u * .6, y); c.lineTo(x + u * .6, y); c.moveTo(x, y - u * .8); c.lineTo(x, y + u * .8); c.stroke(); c.strokeStyle = SEPIA;
+    c.fillStyle = '#8fbf7a'; c.beginPath(); c.arc(x - u * 1.35, y, u * .4, 0, 7); c.fill(); c.stroke();
+    c.beginPath(); c.arc(x - u * 1.45, y - u * .05, u * .12, .2, Math.PI - .2); c.stroke();
+  }
+  const hx = x - u * (g.kind === 'whale' ? .9 : 1.4), hy = y - u * (g.kind === 'whale' ? .8 : .35);
+  c.fillStyle = '#ff6f59'; c.beginPath(); c.moveTo(hx - u * .35, hy + u * .1); c.quadraticCurveTo(hx, hy - u * .9, hx + u * .5, hy - u * .55); c.lineTo(hx + u * .35, hy + u * .1); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(hx + u * .5, hy - u * .55, u * .14, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = SEPIA; c.font = 'bold ' + Math.round(u * .7) + 'px sans-serif'; c.fillText('z', hx - u * .2, hy - u * .8 - ((t * 8 + g.ph * 5) % 8));
+}
+function drawSparkFx(c, s, t) {
+  const sp = s.spark; if (!sp) return;
+  c.save(); c.setLineDash([6, 6]); c.strokeStyle = 'rgba(244,180,0,.8)'; c.lineWidth = 2;
+  for (let i = 1; i < sp.chain.length; i++) { const a = s.boats[sp.chain[i - 1]], b = s.boats[sp.chain[i]]; c.beginPath(); c.moveTo(ox + a.x * cs, oy + a.y * cs); c.lineTo(ox + b.x * cs, oy + b.y * cs); c.stroke(); }
+  c.restore();
+  const h = s.boats[sp.holder], u = Math.max(cs * 1.15, 9), hx = ox + h.x * cs, hy = oy + h.y * cs;
+  c.strokeStyle = '#ffd23a'; c.lineWidth = 3; c.beginPath(); c.arc(hx, hy, u * 1.7, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.max(0, sp.ttl) / CFG.SPARK_TTL); c.stroke();
+  drawLantern(c, hx, hy - u * .2, u * .55, t);
+  if (sp.holder === 0 && !sp.link) { // show how close "beside" is: a dashed range ring round the holder
+    c.save(); c.setLineDash([5, 7]); c.strokeStyle = 'rgba(244,180,0,.55)'; c.lineWidth = 2; c.beginPath(); c.arc(hx, hy, CFG.ALONG * cs, 0, 7); c.stroke(); c.restore();
+  }
+  if (sp.link) {
+    const o = s.boats[sp.link.id], ox2 = ox + o.x * cs, oy2 = oy + o.y * cs, k = Math.min(1, sp.link.t / CFG.PASS_TIME);
+    drawArc(c, h, o, k, 1);
+    c.lineCap = 'round'; c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 9; c.beginPath(); c.arc(ox2, oy2, u * 1.4, 0, 7); c.stroke(); // hold meter: fills in 1 s
+    c.strokeStyle = '#f0a500'; c.lineWidth = 6; c.beginPath(); c.arc(ox2, oy2, u * 1.4, -Math.PI / 2, -Math.PI / 2 + 6.283 * k); c.stroke();
+  }
+}
+function bigText(c, str, y, size, col) {
+  c.font = 'bold ' + size + 'px "Trebuchet MS",sans-serif'; c.textAlign = 'center'; c.lineWidth = size * .14; c.strokeStyle = '#fff6dc'; c.fillStyle = col;
+  c.strokeText(str, vw / 2, y); c.fillText(str, vw / 2, y); c.textAlign = 'start';
+}
+
+function draw() {
+  const c = ctx;
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle = '#d9c7a0'; c.fillRect(0, 0, vw, vh);
+  if (!sim) return;
+  const s = sim;
+  if (s.dirty || ((state === 'parade' || state === 'fog') && fogLift < 1)) { updateTex(s, fogLift); s.dirty = false; }
+  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+  c.drawImage(tex, ox, oy, W * cs, H * cs);
+  c.strokeStyle = SEPIA; c.lineWidth = 4; c.lineJoin = 'round'; c.strokeRect(ox - 2, oy - 2, W * cs + 4, H * cs + 4);
+  const tt = tutTarget();
+  for (const lm of s.map.lms) if (lm.by >= 0 || s.owner[(lm.y | 0) * W + (lm.x | 0)] || lm === tt) drawLandmark(c, lm, s, clock);
+  for (const g of s.map.giants) drawGiant(c, g, clock);
+  if (tt && tutStep === 1) { c.fillStyle = 'rgba(255,210,58,.45)'; c.fillRect(ox + (tt.x - .5) * cs, oy + (tt.y - .5) * cs, cs, cs); }
+  for (const b of s.boats) drawBoat(c, b, b.id === 0, clock);
+  drawSparkFx(c, s, clock);
+  for (const a of arcs) { const k = Math.min(1, a.age / .5); drawArc(c, a.a, a.b, k, Math.max(0, Math.min(1, (1.7 - a.age) / .6))); if (k < 1) { const p = arcPt(a.a, a.b, k); drawLantern(c, p.x, p.y, 9, clock); } }
+  for (const p of parts) { c.globalAlpha = Math.max(0, 1 - p.age / p.life); c.fillStyle = p.color; c.beginPath(); c.arc(p.x, p.y, p.r, 0, 7); c.fill(); }
+  for (const r of rings) { c.globalAlpha = Math.max(0, 1 - r.age / r.life); c.strokeStyle = r.color; c.lineWidth = 4; c.beginPath(); c.arc(r.x, r.y, 10 + r.age / r.life * 46, 0, 7); c.stroke(); }
+  c.globalAlpha = 1;
+  if (tt) drawHand(c, ox + tt.x * cs, oy + tt.y * cs, clock);
+  for (const f of fx) { c.globalAlpha = Math.max(0, 1 - f.age / 1.4); c.font = 'bold 16px sans-serif'; c.lineWidth = 3; c.strokeStyle = '#fff6dc'; c.fillStyle = f.color; const px = ox + f.x * cs, py = oy + f.y * cs - f.age * 24; c.strokeText(f.text, px, py); c.fillText(f.text, px, py); c.globalAlpha = 1; }
+  if (input.touch && state === 'play') { c.strokeStyle = 'rgba(59,42,26,.5)'; c.lineWidth = 3; c.beginPath(); c.arc(input.ax, input.ay, 36, 0, 7); c.stroke(); c.fillStyle = 'rgba(59,42,26,.45)'; c.beginPath(); c.arc(input.px, input.py, 14, 0, 7); c.fill(); }
+  if (countdown > 0) {
+    bigText(c, String(Math.ceil(countdown)), vh / 2, 96, '#ff6f59');
+    bigText(c, STR.maps[s.layout] + ' · ' + STR.sets[s.lmSet], vh / 2 + 56, 22, '#7a5530');
+  }
+  if (tutFlash > 0 && state === 'play') {   // drawn check mark
+    const k = 55 * Math.min(1, tutFlash + .3); c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+    for (const [w, col] of [[k * .5, '#fff6dc'], [k * .3, '#2e9e4f']]) { c.lineWidth = w; c.strokeStyle = col; c.beginPath(); c.moveTo(vw / 2 - k, vh * .4 - k * .1); c.lineTo(vw / 2 - k * .3, vh * .4 + k * .6); c.lineTo(vw / 2 + k, vh * .4 - k * .8); c.stroke(); }
+    c.restore();
+  }
+  { const me = s.boats[0];   // slow-water cue: drag lines behind the player's boat and one pop-up when it enters a giant's ring
+    if (me.slow < 1 && state === 'play') {
+      if (!slowPrev) fx.push({ x: me.x, y: me.y - 3, text: STR.slow, color: '#3f6f8f', age: 0 });
+      const bx = ox + me.x * cs, by = oy + me.y * cs, u = Math.max(cs * 1.15, 9), bk = (clock * 3) % 1;
+      c.save(); c.strokeStyle = 'rgba(63,111,143,.75)'; c.lineWidth = 2.5; c.lineCap = 'round';
+      for (let i = 0; i < 3; i++) { const d = u * (1.3 + ((bk + i / 3) % 1) * 1.6); c.globalAlpha = 1 - ((bk + i / 3) % 1); c.beginPath(); c.arc(bx - Math.cos(me.h) * d, by - Math.sin(me.h) * d, u * .9, me.h + Math.PI - .8, me.h + Math.PI + .8); c.stroke(); }
+      c.restore();
+    }
+    slowPrev = me.slow < 1;
+  }
+  if (state === 'fog') {
+    bigText(c, STR.bell, oy + 60, 40, '#8e4585');
+    bigText(c, STR.fogLifts, oy + 100, 24, '#7a5530');
+    if (fogT > 1) { const me = sim.boats[0]; bigText(c, score(me) + ' ' + STR.pts + '   #' + (ranked(sim).indexOf(me) + 1) + '/' + sim.boats.length, oy + 146, 34, '#c4491f'); }
+  }
+}
+function drawDial(s) {
+  const c = $('dial').getContext('2d'), R = 56, len = s ? s.len : CFG.ROUND, frac = s ? s.t / len : 0;
+  c.clearRect(0, 0, 112, 112);
+  c.fillStyle = '#fff6dc'; c.strokeStyle = SEPIA; c.lineWidth = 5; c.beginPath(); c.arc(R, R, 50, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = (1 - frac) * len < 30 ? '#ff6f59' : '#7fd0c8';
+  c.beginPath(); c.moveTo(R, R); c.arc(R, R, 44, -Math.PI / 2 + frac * 6.283, Math.PI * 1.5); c.closePath(); c.fill();
+  c.strokeStyle = SEPIA; c.lineWidth = 2;
+  for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; c.beginPath(); c.moveTo(R + Math.cos(a) * 44, R + Math.sin(a) * 44); c.lineTo(R + Math.cos(a) * 50, R + Math.sin(a) * 50); c.stroke(); }
+  const a = -Math.PI / 2 + frac * 6.283; c.strokeStyle = '#3b2a1a'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(R, R); c.lineTo(R + Math.cos(a) * 40, R + Math.sin(a) * 40); c.stroke();
+  c.fillStyle = '#3b2a1a'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center'; c.fillText(fmtTime(len - (s ? s.t : 0)), R, R + 38 - 12 + 4); c.textAlign = 'start';
+}
+function updateHud() {
+  const s = sim, me = s.boats[0], rk = ranked(s).indexOf(me) + 1;
+  const sc = score(me); $('sc').textContent = sc; $('rk').textContent = '#' + rk + '/' + s.boats.length;
+  if (sc !== lastScore) { if (lastScore >= 0) { $('sc').classList.remove('bump'); void $('sc').offsetWidth; $('sc').classList.add('bump'); } lastScore = sc; }
+  const sp = s.spark; let t = '';
+  $('goalTxt').textContent = sp && sp.holder === 0 ? STR.goalHold : sp && sp.chain.includes(0) ? STR.goalChain : sp ? STR.goalWatch : STR.goalInk;
+  const ik = s.map.inkable || 1;
+  $('barAll').style.width = Math.min(100, s.inked / ik * 100) + '%'; $('barMe').style.width = Math.min(100, me.cells / ik * 100) + '%';
+  $('barMe').style.background = me.color;
+  let icn = '';
+  if (sp) { if (sp.holder === 0) { icn = 'lantern'; t = s.guided && tutOn() && tutStep === 3 ? '' : Math.ceil(sp.ttl) + STR.sec; } else if (sp.chain.includes(0)) { icn = 'link'; t = '' + sp.chain.length; } else { icn = 'lantern'; t = STR.animals[sp.holder].n; } }   // guided spark never times out: no countdown
+  if (icn !== lastSpIc) { $('spIc').innerHTML = icn ? ic(icn, '1.4em') : ''; lastSpIc = icn; }
+  $('spTx').textContent = t;
+  drawDial(s);
+}
+
+/* --- sound: a calm ambient bed made in code (sea drone, slow waves, sparse bell notes), no samples, no tune --- */
+const MKEY = 'inkwake.mute.v1';
+let userMuted = false, portalMuted = false;   // the portal's mute always wins: effective mute = portalMuted || userMuted
+try { userMuted = localStorage.getItem(MKEY) === '1'; } catch (e) { /* storage blocked: sound on */ }
+let muted = userMuted;
+const Snd = (() => {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let ac = null, master = null, level = 1, timer = 0;
+  const NOTES = [523.25, 587.33, 659.25, 783.99, 880];   // pentatonic: any order sounds gentle
+  function gain() { return muted ? 0 : .5 * level; }
+  function build() {
+    master = ac.createGain(); master.gain.value = 0; master.connect(ac.destination);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 650; lp.connect(master);
+    [[110, .05, .05], [164.81, .03, .08], [220.5, .02, .11]].forEach(([f, g0, rate]) => {   // slow-breathing drone
+      const o = ac.createOscillator(), g = ac.createGain(), l = ac.createOscillator(), lg = ac.createGain();
+      o.frequency.value = f; g.gain.value = g0; l.frequency.value = rate; lg.gain.value = g0 * .6;
+      o.connect(g); g.connect(lp); l.connect(lg); lg.connect(g.gain); o.start(); l.start();
+    });
+    const n = ac.sampleRate * 2, buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0); let last = 0;
+    for (let i = 0; i < n; i++) { last = (last + .03 * (Math.random() * 2 - 1)) / 1.03; d[i] = last * 4; }   // soft brown noise
+    const src = ac.createBufferSource(), wf = ac.createBiquadFilter(), wg = ac.createGain(), wl = ac.createOscillator(), wlg = ac.createGain();
+    src.buffer = buf; src.loop = true; wf.type = 'lowpass'; wf.frequency.value = 520; wg.gain.value = .1;
+    wl.frequency.value = .09; wlg.gain.value = .08; wl.connect(wlg); wlg.connect(wg.gain);        // waves swell and fade
+    src.connect(wf); wf.connect(wg); wg.connect(master); src.start(); wl.start();
+    timer = setInterval(() => { if (Math.random() < .7) note(NOTES[Math.random() * NOTES.length | 0] / 2, .035, 0); }, 4500);
+  }
+  function note(f, vol, delay) {
+    if (!ac || muted || ac.state !== 'running') return;
+    const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .02); g.gain.exponentialRampToValueAtTime(.0005, t + 1.8);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 1.9);
+  }
+  return {
+    unlock() {                         // browsers only allow audio after a tap/key: call from input handlers
+      if (!AC) return;
+      try { if (!ac) { ac = new AC(); build(); } if (ac.state === 'suspended') ac.resume(); this.apply(); } catch (e) { ac = null; }
+    },
+    apply() { if (ac && master) master.gain.setTargetAtTime(gain(), ac.currentTime, .4); },
+    level(v) { level = v; this.apply(); },
+    ping(f, delay) { note(f, .06, delay); },
+    sfx(kind) {                        // short effects made in code (no files): click, steer, start, bell, slip
+      if (!ac || muted || ac.state !== 'running') return;
+      const S = { click: [660, 440, .07, 'triangle', .07], steer: [330, 420, .06, 'sine', .05], start: [392, 784, .35, 'triangle', .08], bell: [523.25, 523.25, 1.4, 'sine', .09], slip: [300, 160, .25, 'sine', .06] }[kind];
+      if (!S) return;
+      const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.type = S[3]; o.frequency.setValueAtTime(S[0], t); o.frequency.exponentialRampToValueAtTime(S[1], t + S[2]);
+      g.gain.setValueAtTime(S[4], t); g.gain.exponentialRampToValueAtTime(.0005, t + S[2]);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + S[2] + .05);
+    },
+    hidden(h) { if (!ac) return; try { if (h) ac.suspend(); else ac.resume(); } catch (e) { } },
+    get on() { return !!ac; }
+  };
+})();
+function setMuted(m, initial) {   // the player's own switch; has no effect on the sound while the portal has muted the game
+  userMuted = m; if (!initial) try { localStorage.setItem(MKEY, m ? '1' : '0'); } catch (e) { /* this session only */ }
+  refreshMute(initial);
+}
+function setPortalMuted(m) { portalMuted = !!m; refreshMute(true); }
+function refreshMute(initial) {
+  muted = portalMuted || userMuted;
+  for (const id of ['muteBtn', 'muteBtn2']) { const b = $(id); b.innerHTML = ic(muted ? 'off' : 'on', '1.4em'); b.disabled = portalMuted; b.setAttribute('aria-label', muted ? STR.unmute : STR.mute); b.setAttribute('aria-pressed', muted ? 'true' : 'false'); }
+  if (!initial) Snd.unlock();
+  Snd.apply();
+}
+
+/* --- events -> popups --- */
+function drainEvents(s) {
+  for (const e of s.events) {
+    if (e.type === 'lm') {
+      fx.push({ x: e.lm.x, y: e.lm.y - 2, text: '+' + CFG.LM_PTS, color: e.b.color, age: 0 });
+      e.b.pop = 1; const px = ox + e.lm.x * cs, py = oy + e.lm.y * cs;
+      burst(px, py, '#ffd23a', 22, 150); rings.push({ x: px, y: py, age: 0, life: .9, color: e.b.color });
+      Snd.ping(e.b.id === 0 ? 880 : 659.25);
+      if (e.b.id === 0 && tutStep === 2) tutAdvance();
+    } else if (e.type === 'slip') {
+      if (e.h.id === 0 || e.o.id === 0) Snd.sfx('slip');
+      if (e.h.id === 0 || e.o.id === 0) fx.push({ x: e.h.x, y: e.h.y - 3, text: STR.stayClose, color: '#a8412f', age: 0 });
+    } else if (e.type === 'pass') {
+      Snd.ping(783.99); Snd.ping(1174.7, .12);
+      fx.push({ x: e.to.x, y: e.to.y - 2, text: STR.relayPop + ' ×' + e.n, color: '#b07a00', age: 0 });
+      e.from.pop = 1; e.to.pop = 1; arcs.push({ a: e.from, b: e.to, age: 0 });
+      burst(ox + e.to.x * cs, oy + e.to.y * cs, '#ffd23a', 20, 150);
+      if (e.n >= 4 && !bigRelay) { bigRelay = true; Portal.happytime(); }
+      if (e.from.id === 0 && tutStep === 3) tutAdvance();
+    } else if (e.type === 'end') endRound();
+  }
+  s.events.length = 0;
+}
+
+/* --- portal hook points (CrazyGames SDK v3). Stubs only: no SDK file is bundled, so with no SDK every call is a no-op
+   and the game plays exactly as before. Method names follow the public v3 docs from memory; not verified against a real SDK. --- */
+const Portal = {
+  sdk() { try { return window.CrazyGames && window.CrazyGames.SDK || null; } catch (e) { return null; } },
+  call(f) { try { const s = this.sdk(); if (s) f(s); } catch (e) { /* a portal error never breaks the game */ } },
+  playing: false,
+  loadingStart() { this.call(s => s.game.loadingStart()); },
+  loadingStop() { this.call(s => s.game.loadingStop()); },
+  gameplay(on) { if (on === this.playing) return; this.playing = on; this.call(s => on ? s.game.gameplayStart() : s.game.gameplayStop()); },
+  happytime() { this.call(s => s.game.happytime()); },                     // a big relay
+  hasAds() { return !!this.sdk(); },                                       // the rewarded button only exists inside a portal
+  rewarded(onReward, onError) {   // onReward runs only after the ad finished; onError tells the player the ad did not play
+    const fail = () => { Snd.level(1); if (onError) onError(); };
+    try {
+      const s = this.sdk(); if (!s) { fail(); return; }
+      s.ad.requestAd('rewarded', {
+        adStarted: () => { Snd.level(0); this.gameplay(false); },
+        adFinished: () => { Snd.level(1); onReward(); },
+        adError: fail
+      });
+    } catch (e) { fail(); }   // SDK missing or threw: the player is told, the button is released
+  },
+  onMute(cb) { this.call(s => { cb(!!s.game.settings.muteAudio); s.game.addSettingsChangeListener(st => cb(!!st.muteAudio)); }); }
+};
+Portal.loadingStart();
+
+/* --- flow --- */
+function show(id, on) { $(id).classList.toggle('hidden', !on); }
+function setState(st) {
+  state = st; resetInput(); Portal.gameplay(st === 'play');                      // no held key/touch survives a pause, resume, quit or new round
+  Snd.level(st === 'pause' ? .3 : 1);
+  show('title', st === 'title'); show('pauseCard', st === 'pause'); show('atlas', st === 'atlas');
+  show('hud', st === 'play' || st === 'pause' || st === 'fog'); show('panel', st === 'parade');
+  for (const id of ['tHand', 'aHand']) show(id, tutOn());
+  show('skipTip', st === 'play' && tutOn());
+  $('playBtn').classList.toggle('pulse', tutOn()); $('againBtn').classList.toggle('pulse', tutOn());
+  layout();
+}
+let mapPick = 3, diffPick = 1, lastLayout = -1, lmSetNext = Math.random() * 3 | 0;   // mapPick 3 = mix
+function startGame() {
+  Snd.sfx('start');
+  const seed = (Math.random() * 2 ** 31) | 0;
+  let layout = mapPick; if (layout > 2) { do layout = Math.random() * 3 | 0; while (layout === lastLayout); }
+  lastLayout = layout;
+  const lmSet = lmSetNext; lmSetNext = (lmSetNext + 1) % 3;             // landmark drawings change every round
+  sim = makeSim(nBoats, seed, { layout, lmSet, len: tutOn() ? CFG.GUIDED_ROUND : CFG.ROUND });
+  sim.diff = diffPick;
+  sim.boats.forEach((b, i) => { if (i) { b.ctrl = BotCtrl(.4 + Math.random() * .6, seed + i * 7919, diffPick); if (diffPick === 0) b.speed = CFG.EASY_SPEED; } else b.ctrl = LocalCtrl; });
+  Snd.unlock(); resetInput(); bigRelay = false; tutSkip.clear(); tutBest = 1e9; tutStall = 0;
+  sim.guided = tutOn(); tutSteer = 0; tutTgt = tutStep === 0 ? sim.boats[0] : null; tutFlash = 0;
+  fx = []; parts = []; rings = []; arcs = []; fogLift = 0; fogT = 0; bellT = 0; countdown = 3; accum = 0; gameCount++; lastCells = 0; lastScore = -1;
+  setState('play');
+  updateHud();
+}
+let accum = 0, bigRelay = false, slowPrev = false, lastSpIc = '';
+
+function calcAwards(s) {
+  const bs = s.boats, out = [];
+  const top = f => bs.reduce((a, b) => f(b) > f(a) ? b : a);
+  const m = top(b => b.cells);
+  out.push({ icon: 'map', title: STR.awMap, who: [m.id], note: m.cells + ' ' + STR.cellsWord });
+  const a = top(b => b.assists);
+  if (a.assists > 0) out.push({ icon: 'assist', title: STR.awAssist, who: [a.id], note: '×' + a.assists });
+  let lc = null; for (const c of s.chains) if (c.ids.length >= 2 && (!lc || c.ids.length > lc.ids.length)) lc = c;
+  if (lc) out.push({ icon: 'link', title: STR.awRelay, who: lc.ids, note: lc.ids.length + ' ' + STR.links });
+  let sv = null; for (const p of s.passes) if (p.margin <= CFG.SAVE_MARGIN && (!sv || p.margin < sv.margin)) sv = p;
+  if (sv) out.push({ icon: 'clock', title: STR.awSave, who: [sv.from], note: sv.margin.toFixed(1) + STR.sec });
+  return out;
+}
+const nameOf = id => (id === 0 ? STR.you + ' ' : '') + STR.animals[id].n;
+
+function endRound() {
+  const s = sim, rk = ranked(s);
+  Snd.sfx('bell'); bellT = FOG_SHOW; fogLift = 0; fogT = 0; setState('fog');   // the parade panel opens after the fog-lift moment (see frame())
+  // postcard snapshot of the finished chart (stored un-framed; frame drawn when shown)
+  updateTex(s, 1);
+  const snap = document.createElement('canvas'); snap.width = 240; snap.height = 360;
+  const sc = snap.getContext('2d'); sc.imageSmoothingQuality = 'high'; sc.drawImage(tex, 0, 0, 240, 360);
+  let data = ''; try { data = snap.toDataURL('image/jpeg', .8); } catch (e) { }
+  const myRank = rk.indexOf(s.boats[0]) + 1;
+  current = { id: Date.now() + '-' + gameCount, img: data, score: score(s.boats[0]), rank: myRank, n: s.boats.length, gold: myRank === 1 }; // gold border is earned by finishing first
+  const atl = atlasLoad(); atl.unshift(current); while (atl.length > ATLAS_MAX) atl.pop(); atlasSave(atl);
+  // panel
+  $('parTitle').innerHTML = ic('star', '1.3em') + ' ' + STR.parade;
+  $('awards').innerHTML = calcAwards(s).map((a, i) =>
+    '<div class="award" style="animation-delay:' + (.6 + i * .5) + 's"><span class="ic">' + ic(a.icon, '1.8rem') + '</span><div><b>' + a.title + '</b><small>' +
+    a.who.map(id => '<span class="dot" style="background:' + INK[id] + '"></span>' + nameOf(id)).join(' → ') + ' · ' + a.note + '</small></div></div>').join('');
+  $('board').innerHTML = rk.map((b, i) =>
+    '<div class="brow' + (b.id === 0 ? ' me' : '') + '"><span>' + (i + 1) + '</span><span class="nm"><span class="dot" style="background:' + b.color + '"></span>' + nameOf(b.id) + '</span>' +
+    '<span class="bd">' + ic('map', '1em') + b.cells + ' ' + ic('lantern', '1em') + b.lms + ' ' + ic('assist', '1em') + b.assists + ' ' + ic('link', '1em') + b.relayPts + '</span><b>' + score(b) + '</b></div>').join('');
+  $('goldNote').textContent = current.gold ? STR.goldEarned : '';
+  show('goldAdBtn', !current.gold && Portal.hasAds());   // rewarded ad: gold ink postcard (only inside a portal)
+  drawPC();
+}
+function enterParade() { sim.dirty = true; setState('parade'); }
+function drawPostcard(c, w, h, img, meta) {
+  c.fillStyle = '#f6ecd2'; c.fillRect(0, 0, w, h);
+  const bw = Math.round(w * .05);
+  if (meta.gold) {
+    const g = c.createLinearGradient(0, 0, w, h);
+    [[0, '#fff3b0'], [.3, '#e0a100'], [.5, '#fff3b0'], [.75, '#b87900'], [1, '#ffe27a']].forEach(p => g.addColorStop(p[0], p[1]));
+    c.fillStyle = g; c.fillRect(0, 0, w, h); c.fillStyle = '#f6ecd2'; c.fillRect(bw, bw, w - 2 * bw, h - 2 * bw);
+  } else { c.strokeStyle = SEPIA; c.lineWidth = 2; c.strokeRect(2, 2, w - 4, h - 4); }
+  const iw = w - 2 * (bw + 4), ih = iw * 1.5;
+  if (img) c.drawImage(img, bw + 4, bw + 4, iw, ih);
+  c.strokeStyle = SEPIA; c.lineWidth = 1.5; c.strokeRect(bw + 4, bw + 4, iw, ih);
+  c.fillStyle = SEPIA; c.textAlign = 'center';
+  c.font = 'bold ' + Math.round(w * .085) + 'px "Trebuchet MS",sans-serif'; c.fillText(STR.title, w / 2, bw + 4 + ih + w * .12);
+  c.font = Math.round(w * .075) + 'px "Trebuchet MS",sans-serif'; c.fillText(meta.score + ' ' + STR.pts + '  #' + meta.rank + '/' + meta.n, w / 2, bw + 4 + ih + w * .24);
+  c.textAlign = 'start';
+}
+function drawPC() {
+  const el = $('pcv'), c = el.getContext('2d');
+  const meta = Object.assign({}, current);      // snapshot: a round started meanwhile cannot mix its data with this image
+  const render = img => { if (!current || current.id !== meta.id) return; c.clearRect(0, 0, el.width, el.height); drawPostcard(c, el.width, el.height, img, meta); };
+  if (!meta.img) { render(null); return; }
+  const im = new Image(); im.onload = () => render(im); im.src = meta.img;
+}
+let atlasGen = 0;
+function openAtlas() {
+  const list = atlasLoad(), grid = $('atlasGrid'); grid.innerHTML = ''; const gen = ++atlasGen;
+  if (!list.length) grid.textContent = STR.empty;
+  list.forEach(m => {
+    const el = document.createElement('canvas'); el.width = 120; el.height = 210; el.style.borderRadius = '4px'; el.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+    grid.appendChild(el); const c = el.getContext('2d');
+    if (m.img) { const im = new Image(); im.onload = () => { if (gen === atlasGen) drawPostcard(c, 120, 210, im, m); }; im.src = m.img; } else drawPostcard(c, 120, 210, null, m);   // m is this grid's own record snapshot; a newer grid cancels older loads
+  });
+  atlasFrom = state; setState('atlas');
+}
+let atlasFrom = 'title';
+
+/* --- wiring --- */
+$('tTitle').textContent = STR.title; $('tHint1').textContent = STR.hint1; $('tHint2').textContent = STR.hint2;
+const lbl = (id, icon, text) => { $(id).innerHTML = ic(icon) + ' ' + text; };
+$('tBoats').textContent = STR.boats; $('tBoatIc').innerHTML = ic('boat'); $('tArt').innerHTML = ic('boat', '2.4rem') + ic('fog', '2.4rem') + ic('map', '2.4rem');
+for (const id of ['tHand', 'aHand']) $(id).innerHTML = ic('hand', '2.2rem');
+$('scIc').innerHTML = ic('star', '1.3em'); $('pauseBtn').innerHTML = ic('pause', '1.4em'); $('skipTip').innerHTML = STR.skipTips + ' ' + ic('close', '1em');
+lbl('playBtn', 'play', STR.play); lbl('atlasBtn', 'book', STR.atlas); lbl('atlasBtn2', 'book', STR.atlas);
+$('pTitle2').textContent = STR.pause; lbl('resumeBtn', 'play', STR.resume); lbl('quitBtn', 'close', STR.quit);
+lbl('aTitle', 'book', STR.atlas); lbl('atlasBack', 'back', STR.back); lbl('againBtn', 'boat', STR.again);
+for (let n = 3; n <= 8; n++) { const b = document.createElement('button'); b.className = 'chip' + (n === nBoats ? ' on' : ''); b.textContent = n; b.onclick = () => { nBoats = n; [...$('chips').children].forEach(x => x.classList.toggle('on', x === b)); }; $('chips').appendChild(b); }
+lbl('menuBtn', 'home', STR.menu);
+$('menuBtn').onclick = () => { newPreview(); setState('title'); };
+$('playBtn').onclick = startGame; $('againBtn').onclick = startGame;
+$('atlasBtn').onclick = openAtlas; $('atlasBtn2').onclick = openAtlas;
+$('atlasBack').onclick = () => setState(atlasFrom === 'parade' ? 'parade' : 'title');
+$('pauseBtn').onclick = () => { if (state === 'play') setState('pause'); };
+$('skipTip').onclick = tutSkipAll;
+$('resumeBtn').onclick = () => setState('play');
+$('quitBtn').onclick = () => { newPreview(); setState('title'); };
+$('aNote').textContent = STR.atlasNote; $('goldAdBtn').textContent = STR.goldAd;
+$('goldAdBtn').onclick = () => {
+  const cur = current; if (!cur || cur.gold) return;
+  const btn = $('goldAdBtn'); btn.disabled = true;      // no double requests while an ad is loading
+  Portal.rewarded(() => {                       // ad finished: the postcard gets its gold border (also in the saved Atlas copy)
+    btn.disabled = false;
+    cur.gold = true; const atl = atlasLoad(), r = atl.find(m => m.id === cur.id); if (r) { r.gold = true; atlasSave(atl); }
+    if (current && current.id === cur.id) { $('goldNote').textContent = STR.goldEarned; show('goldAdBtn', false); drawPC(); }
+  }, () => {                                    // ad failed: say so and keep the button off for a few seconds
+    if (current && current.id === cur.id) $('goldNote').textContent = STR.adNone;
+    setTimeout(() => { btn.disabled = false; if (current && current.id === cur.id && !cur.gold && $('goldNote').textContent === STR.adNone) $('goldNote').textContent = ''; }, 4000);
+  });
+};
+$('mapLbl').textContent = STR.mapLbl; $('diffLbl').textContent = STR.diffLbl;
+function optChips(id, labels, get, set) {
+  const box = $(id);
+  labels.forEach((t, i) => { const b = document.createElement('button'); b.className = 'chip wide' + (i === get() ? ' on' : ''); b.textContent = t; b.onclick = () => { set(i); [...box.children].forEach(x => x.classList.toggle('on', x === b)); }; box.appendChild(b); });
+}
+const prefLoad = (k, max, def) => { try { const v = parseInt(localStorage.getItem(k), 10); return v >= 0 && v <= max ? v : def; } catch (e) { return def; } };
+const prefSave = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) { /* this session only */ } };
+mapPick = prefLoad('inkwake.map.v5', 3, 3); diffPick = prefLoad('inkwake.diff.v5', 1, 1);
+optChips('mapChips', STR.maps.concat(STR.mix), () => mapPick, i => { mapPick = i; prefSave('inkwake.map.v5', i); });
+optChips('diffChips', STR.diffs, () => diffPick, i => { diffPick = i; prefSave('inkwake.diff.v5', i); });
+$('muteBtn').onclick = () => { if (!portalMuted) setMuted(!userMuted); }; $('muteBtn2').onclick = () => { if (!portalMuted) setMuted(!userMuted); };
+setMuted(userMuted, true);
+Portal.onMute(setPortalMuted);   // the portal's own sound setting wins: the in-game button cannot undo it
+
+const pos = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+cv.addEventListener('pointerdown', e => {
+  if (state !== 'play') return;
+  const p = pos(e); try { cv.setPointerCapture(e.pointerId); } catch (_) { }
+  rings.push({ x: p.x, y: p.y, age: 0, life: .45, color: '#fff6dc' });   // instant touch feedback
+  Snd.sfx('steer');
+  if (e.pointerType === 'mouse') { input.mouse = true; input.tx = (p.x - ox) / cs; input.ty = (p.y - oy) / cs; }
+  else { input.touch = true; input.ax = input.px = p.x; input.ay = input.py = p.y; input.ang = null; }
+});
+cv.addEventListener('pointermove', e => {
+  if (state !== 'play') return;
+  const p = pos(e);
+  if (e.pointerType === 'mouse') { if (input.mouse) { input.tx = (p.x - ox) / cs; input.ty = (p.y - oy) / cs; } return; } // mouse steers only while the button is held
+  if (!input.touch) return;
+  input.px = p.x; input.py = p.y;
+  let dx = p.x - input.ax, dy = p.y - input.ay; const d = Math.hypot(dx, dy);
+  if (d > 60) { input.ax = p.x - dx / d * 60; input.ay = p.y - dy / d * 60; dx = p.x - input.ax; dy = p.y - input.ay; }
+  if (d > 10) input.ang = Math.atan2(dy, dx);
+});
+const up = e => { if (e.pointerType === 'mouse') input.mouse = false; else { input.touch = false; input.ang = null; } };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('blur', resetInput);
+addEventListener('pointerdown', e => { const t = e && e.target; if (t && (t.id === 'muteBtn' || t.id === 'muteBtn2')) return; Snd.unlock(); if (t && t.tagName === 'BUTTON') Snd.sfx('click'); });   // audio may only start after a tap (a tap on mute must not start it)
+cv.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('keydown', e => {
+  Snd.unlock();
+  const c = e.code;   // keys by physical position (e.code): works on AZERTY too (KeyA/KeyQ = left, KeyD = right); never Escape or Ctrl+W
+  if ((c === 'Enter' || c === 'NumpadEnter' || c === 'Space') && !(e.target && e.target.tagName === 'BUTTON')) { // keyboard: Enter/Space = the one primary button
+    if (state === 'title' || state === 'parade') startGame(); else if (state === 'pause') setState('play'); else if (state === 'atlas') $('atlasBack').onclick();
+    e.preventDefault(); return;
+  }
+  if (c === 'ArrowLeft' || c === 'KeyA' || c === 'KeyQ') { if (!input.L && state === 'play') Snd.sfx('steer'); input.L = 1; }
+  else if (c === 'ArrowRight' || c === 'KeyD') { if (!input.R && state === 'play') Snd.sfx('steer'); input.R = 1; }
+  if (state === 'play' && (input.L || input.R) && sim) { const me = sim.boats[0]; rings.push({ x: ox + me.x * cs, y: oy + me.y * cs, age: 0, life: .4, color: '#fff6dc' }); }
+  else if (c === 'KeyP') { if (state === 'play') setState('pause'); else if (state === 'pause') setState('play'); }
+  if (c.startsWith('Arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => {
+  const c = e.code;
+  if (c === 'ArrowLeft' || c === 'KeyA' || c === 'KeyQ') input.L = 0;
+  else if (c === 'ArrowRight' || c === 'KeyD') input.R = 0;
+});
+document.addEventListener('visibilitychange', () => {
+  Snd.hidden(document.hidden);
+  if (document.hidden) { resetInput(); if (state === 'play') setState('pause'); }
+  else if (!looping) { looping = true; last = performance.now(); requestAnimationFrame(frame); }
+});
+
+function newPreview() { sim = makeSim(nBoats, (Math.random() * 2 ** 31) | 0); sim.boats.forEach(b => b.ctrl = LocalCtrl); countdown = 0; fogLift = 0; }
+
+/* --- main loop --- */
+let last = performance.now(), looping = true, loaded = false;
+function compact(arr, keep) { let j = 0; for (let i = 0; i < arr.length; i++) if (keep(arr[i])) arr[j++] = arr[i]; arr.length = j; } // in place: no per-frame array allocation
+const fxAlive = f => f.age < 1.4, partAlive = p => p.age < p.life, arcAlive = a => a.age < 1.7, ringAlive = r => r.age < r.life;
+function frame(now) {
+  if (document.hidden) { looping = false; return; } // loop sleeps while the tab is hidden; visibilitychange wakes it
+  if (!loaded) { loaded = true; show('loading', false); Portal.loadingStop(); }   // first frame is ready: lift the loading screen
+  const dt = Math.min(.1, (now - last) / 1000); last = now; clock += dt;
+  for (let i = 0; i < fx.length; i++) fx[i].age += dt; compact(fx, fxAlive);
+  if (bellT > 0) bellT -= dt;
+  for (let i = 0; i < parts.length; i++) { const p = parts[i]; p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 140 * dt; }
+  compact(parts, partAlive);
+  for (let i = 0; i < rings.length; i++) rings[i].age += dt; compact(rings, ringAlive);
+  for (let i = 0; i < arcs.length; i++) arcs[i].age += dt; compact(arcs, arcAlive);
+  if (tutFlash > 0) tutFlash -= dt;
+  if (sim) for (const b of sim.boats) if (b.pop > 0) b.pop = Math.max(0, b.pop - dt * 2.5);
+  if (state === 'play' && sim) {
+    if (countdown > 0) countdown -= dt;
+    else {
+      accum += dt;
+      while (accum >= CFG.STEP && state === 'play') { step(sim, CFG.STEP); accum -= CFG.STEP; drainEvents(sim); tutTick(CFG.STEP); }
+      const me = sim.boats[0];
+      if (me.cells >= lastCells + 5) { lastCells = me.cells; burst(ox + me.x * cs, oy + me.y * cs, me.color, 3, 60); } // ink splash
+    }
+    if (state === 'play') updateHud();
+  }
+  if (state === 'fog') {
+    fogT += dt; fogLift = Math.min(1, fogLift + dt / 2);
+    if (Math.random() < .5) burst(ox + Math.random() * W * cs, oy + Math.random() * H * cs * .6, ['#ffd23a', '#ff6f59', '#1fa6a0', '#8e4585'][Math.random() * 4 | 0], 2, 90);
+    updateHud();
+    if (fogT >= FOG_SHOW) enterParade();
+  }
+  if (state === 'parade') fogLift = 1;
+  draw();
+  requestAnimationFrame(frame);
+}
+newPreview(); setState('title');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

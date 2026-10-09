@@ -12,24 +12,24 @@ canvas{display:block;touch-action:none;outline:none}
 </style>
 </head>
 <body>
-<canvas id="c" width="320" height="240" tabindex="0"></canvas>
+<canvas id="c" width="960" height="720" tabindex="0"></canvas>
 <script>
 /*
- * CORAL REEF RUN - version 1
- * (c) Treasure Studio. Original code and original pixel art, all drawn in code on a 320x240 grid.
+ * CORAL REEF RUN - version 3
+ * (c) Treasure Studio. Original code and original art, all drawn in code (smooth vector shapes on a 320x240 layout, rendered at 2-3x resolution).
  * Sound effects and music are generated here with the Web Audio API (own synth, no third-party code).
  * No third-party assets, fonts, images or libraries are used in this file.
  */
 (function () {
 'use strict';
-var W = 320, H = 240, HOR = 84, YB = 200, CZ = 30, LW = 64, NAVY = '#0a1740';
+var W = 320, H = 240, HOR = 84, YB = 200, CZ = 30, LW = 64, NAVY = '#0a1740', Q = 0;
 
 var cv = document.getElementById('c');
 var ctx = cv.getContext('2d');
-var buf = document.createElement('canvas'); buf.width = W; buf.height = H;
+var buf = document.createElement('canvas');
 var g = buf.getContext('2d');
-var bgC = document.createElement('canvas'); bgC.width = W; bgC.height = H;
-var fgC = document.createElement('canvas'); fgC.width = W; fgC.height = H;
+var bgC = document.createElement('canvas');
+var fgC = document.createElement('canvas');
 
 /* ---------- small helpers ---------- */
 function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -45,82 +45,44 @@ function mix(a, b, k) {
   r = 'rgb(' + Math.round(x[0] + (y[0] - x[0]) * k) + ',' + Math.round(x[1] + (y[1] - x[1]) * k) + ',' + Math.round(x[2] + (y[2] - x[2]) * k) + ')';
   return (mixC[key] = r);
 }
-function R(x, y, w, h, c) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.max(0, Math.round(w)), Math.max(0, Math.round(h))); }
+// Rectangles are snapped to the device-pixel grid (1/Q of a logical unit), so edges are crisp and seams never show.
+function R(x, y, w, h, c) {
+  var x0 = Math.round(x * Q) / Q, y0 = Math.round(y * Q) / Q, x1 = Math.round((x + w) * Q) / Q, y1 = Math.round((y + h) * Q) / Q;
+  if (x1 <= x0 || y1 <= y0) return;
+  g.fillStyle = c; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+}
 function ell(cx, cy, rx, ry, col, ang) {
-  if (rx < .5 || ry < .5) { if (rx > 0 && ry > 0) R(cx, cy, 1, 1, col); return; }
-  g.fillStyle = col; cx = Math.round(cx); cy = Math.round(cy);
-  var dy, dx;
-  if (!ang) {
-    var iy = Math.ceil(ry);
-    for (dy = -iy; dy <= iy; dy++) {
-      var q = 1 - (dy / ry) * (dy / ry); if (q < 0) continue;
-      var hw = Math.round(rx * Math.sqrt(q)); g.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
-    }
-    return;
-  }
-  var ca = Math.cos(ang), sa = Math.sin(ang), ext = Math.ceil(Math.max(rx, ry));
-  for (dy = -ext; dy <= ext; dy++) {
-    var s0 = null;
-    for (dx = -ext; dx <= ext + 1; dx++) {
-      var inn = false;
-      if (dx <= ext) { var u = (dx * ca + dy * sa) / rx, v = (-dx * sa + dy * ca) / ry; inn = u * u + v * v <= 1; }
-      if (inn) { if (s0 === null) s0 = dx; } else if (s0 !== null) { g.fillRect(cx + s0, cy + dy, dx - s0, 1); s0 = null; }
-    }
-  }
+  if (rx <= 0 || ry <= 0) return;
+  g.fillStyle = col; g.beginPath(); g.ellipse(cx, cy, rx, ry, ang || 0, 0, 6.2832); g.fill();
 }
 function line(x0, y0, x1, y1, col, t) {
-  t = t || 1; g.fillStyle = col;
-  var n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) | 0, i;
-  if (n < 1) { g.fillRect(Math.round(x0), Math.round(y0), t, t); return; }
-  for (i = 0; i <= n; i++) g.fillRect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), t, t);
+  g.strokeStyle = col; g.lineWidth = t || 1; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
 }
-function spr(rows, x, y, k, pal) {
-  for (var r = 0; r < rows.length; r++) {
-    var row = rows[r], c = 0;
-    while (c < row.length) {
-      var ch = row.charAt(c);
-      if (ch === '.' || !pal[ch]) { c++; continue; }
-      var c2 = c; while (c2 < row.length && row.charAt(c2) === ch) c2++;
-      R(x + c * k, y + r * k, (c2 - c) * k, k, pal[ch]); c = c2;
-    }
-  }
+function poly(pts, x, y, s, fill, out) {
+  g.beginPath();
+  for (var i = 0; i < pts.length; i += 2) { var px = x + pts[i] * s, py = y + pts[i + 1] * s; if (i) g.lineTo(px, py); else g.moveTo(px, py); }
+  g.closePath();
+  if (out) { g.lineJoin = 'round'; g.lineWidth = out[1]; g.strokeStyle = out[0]; g.stroke(); }
+  g.fillStyle = fill; g.fill();
 }
-function sprO(rows, x, y, k, col) {
-  var pal = {}, i; for (i = 0; i < 40; i++) pal[String.fromCharCode(33 + i)] = col; pal.X = col; pal.W = col; pal.Y = col; pal.A = col; pal.B = col;
-  spr(rows, x - k, y, k, pal); spr(rows, x + k, y, k, pal); spr(rows, x, y - k, k, pal); spr(rows, x, y + k, k, pal);
+function rrect(x, y, w, h, r, col) {
+  g.fillStyle = col; g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); g.fill();
 }
 
-/* ---------- 3x5 pixel font ---------- */
-var FONT = {};
-(function () {
-  var d = 'A010101111101101B110101110101110C011100100100011D110101101101110E111100110100111F111100110100100G011100101101011H101101111101101I111010010010111J001001001101010K101101110101101L100100100100111M101111111101101N111101101101101O010101101101010P110101110100100Q010101101110011R110101110101101S011100010001110T111010010010010U101101101101111V101101101101010W101101111111101X101101010101101Y101101010010010Z1110010101001110111101101101111' +
-    '1010110010010111' + '2110001010100111' + '3110001010001110' + '4101101111001001' + '5111100110001110' + '6011100111101111' + '7111001010010010' + '8111101111101111' + '9111101111001110';
-  // letters/digits stored as 1 key char + 15 bits (digits after the letters block use the same layout)
-  var i = 0, key, bits;
-  while (i < d.length) { key = d.charAt(i); bits = d.substr(i + 1, 15); FONT[key] = bits; i += 16; }
-  FONT['0'] = '111101101101111';
-  FONT['+'] = '000010111010000'; FONT['-'] = '000000111000000'; FONT.x = FONT.X = FONT.X; FONT[':'] = '000010000010000';
-  FONT['!'] = '010010010000010'; FONT['.'] = '000000000000010'; FONT['?'] = '110001010000010'; FONT['/'] = '001001010100100';
-})();
-function tw(s, k) { return (s.length * 4 - 1) * k; }
-function text(s, x, y, k, col, out, align) {
-  s = String(s).toUpperCase();
-  if (align === 'c') x -= tw(s, k) / 2; else if (align === 'r') x -= tw(s, k);
-  x = Math.round(x); y = Math.round(y);
-  if (out) { var o = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]], j; for (j = 0; j < 8; j++) drawStr(s, x + o[j][0] * Math.max(1, k >> 1 || 1), y + o[j][1] * Math.max(1, k >> 1 || 1), k, out); }
-  drawStr(s, x, y, k, col);
+/* ---------- text (system sans-serif, smooth at any resolution) ---------- */
+function fontFor(k) { return 'bold ' + (7 * k) + 'px "Trebuchet MS","Segoe UI",Verdana,Arial,sans-serif'; }
+function tw(s, k) {
+  g.font = fontFor(k); var m = g.measureText(String(s).toUpperCase());
+  return (m && m.width) || String(s).length * 4.4 * k;
 }
-function drawStr(s, x, y, k, col) {
-  g.fillStyle = col;
-  for (var i = 0; i < s.length; i++) {
-    var b = FONT[s.charAt(i)]; if (!b) continue;
-    for (var r = 0; r < 5; r++) {
-      var c = 0;
-      while (c < 3) {
-        if (b.charAt(r * 3 + c) === '1') { var c2 = c; while (c2 < 3 && b.charAt(r * 3 + c2) === '1') c2++; g.fillRect(x + (i * 4 + c) * k, y + r * k, (c2 - c) * k, k); c = c2; } else c++;
-      }
-    }
-  }
+function text(s, x, y, k, col, out, align) {
+  s = String(s).toUpperCase(); g.font = fontFor(k); g.textBaseline = 'middle';
+  g.textAlign = align === 'c' ? 'center' : align === 'r' ? 'right' : 'left';
+  var cy = y + 2.7 * k;
+  if (out) { g.lineJoin = 'round'; g.lineWidth = Math.max(1.2, k * 1.4); g.strokeStyle = out; g.strokeText(s, x, cy); }
+  g.fillStyle = col; g.fillText(s, x, cy);
 }
 
 /* ---------- audio (own tiny synth) ---------- */
@@ -151,7 +113,7 @@ function noise(dur, vol, freq) {
 }
 var SFX = {
   start: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, .12, 'triangle', .22, 0, i * .07); }); },
-  shell: function () { tone(988, .07, 'square', .12); tone(1319, .12, 'square', .12, 0, .06); },
+  ring: function () { tone(988, .07, 'square', .12); tone(1319, .12, 'square', .12, 0, .06); },
   size: function () { [392, 523, 659, 784, 1047].forEach(function (f, i) { tone(f, .14, 'triangle', .24, 0, i * .06); }); },
   power: function () { tone(220, .3, 'sawtooth', .16, 1200); noise(.25, .12, 4000); },
   down: function () { tone(400, .3, 'square', .14, 110); },
@@ -172,7 +134,7 @@ function music(dt) {
 function setMuted(m) { muted = m; if (master) master.gain.value = m ? 0 : .5; }
 
 /* ---------- static background ---------- */
-function withCtx(c, fn) { var o = g; g = c; fn(); g = o; }
+function withCtx(c, fn) { var o = g; g = c; g.setTransform(Q, 0, 0, Q, 0, 0); fn(); g = o; }
 function branchCoral(x, y, h, col, hi) {
   var rects = [], k = Math.max(3, Math.round(h / 9));
   rects.push([x - 1, y - h, k, h]);
@@ -188,38 +150,40 @@ function brainCoral(x, y, r, col, hi) {
   ell(x - r * .25, y - r * .25, r * .5, r * .35, hi);
   for (var i = -2; i <= 2; i++) R(x + i * r * .35, y - r * .3 + (i & 1) * 2, 1, r * .6, mix(col, NAVY, .35));
 }
-function seaweed(x, y, h, ph, t) {
-  for (var i = 0; i < h; i += 2) { var o = Math.round(Math.sin(i * .25 + ph + t) * 2 * (i / h)); R(x + o - 1, y - i - 1, 4, 3, NAVY); }
-  for (i = 0; i < h; i += 2) { o = Math.round(Math.sin(i * .25 + ph + t) * 2 * (i / h)); R(x + o, y - i, 2, 2, (i >> 2) & 1 ? '#2fd04a' : '#1e9c3c'); }
+function weed(x, y, h, ph, t, w) {
+  var i, n = Math.max(4, Math.round(h / 3)), pts = [];
+  for (i = 0; i <= n; i++) pts.push([x + Math.sin(i * .5 + ph + t) * 2.2 * (i / n), y - h * i / n]);
+  [[NAVY, w + 2], ['#1e9c3c', w], ['#3be05a', w * .4]].forEach(function (p) {
+    g.strokeStyle = p[0]; g.lineWidth = p[1]; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath();
+    pts.forEach(function (q, j) { if (j) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); g.stroke();
+  });
 }
 var CORAL = [['#ff4fa3', '#ff9bd0'], ['#d62ad0', '#f08cf0'], ['#ff8a1f', '#ffc46b'], ['#ffd21f', '#fff08a'], ['#8a3fe0', '#c49bff'], ['#2f7bff', '#8fc0ff'], ['#ff3a4a', '#ff9aa0']];
 function urchinSpr(cx, cy, r, t, eyes) {
   var n = 14, i, a;
   for (i = 0; i < n; i++) {
     a = i / n * Math.PI * 2 + (t || 0) * .2;
-    line(cx + Math.cos(a) * r * .8, cy + Math.sin(a) * r * .8, cx + Math.cos(a) * r * 1.5, cy + Math.sin(a) * r * 1.5, '#f2ecff', r > 9 ? 2 : 1);
+    line(cx + Math.cos(a) * r * .8, cy + Math.sin(a) * r * .8, cx + Math.cos(a) * r * 1.5, cy + Math.sin(a) * r * 1.5, '#f2ecff', r > 9 ? 2 : 1.2);
   }
   ell(cx, cy, r + 1, r + 1, NAVY); ell(cx, cy, r, r, '#5b1f9e'); ell(cx - r * .25, cy - r * .3, r * .55, r * .45, '#8a3fe0');
   if (eyes) {
     var e = Math.max(1, r * .22);
     ell(cx - r * .35, cy - r * .05, e + 1, e + 1, '#fff'); ell(cx + r * .35, cy - r * .05, e + 1, e + 1, '#fff');
     ell(cx - r * .3, cy, e * .6, e * .6, NAVY); ell(cx + r * .3, cy, e * .6, e * .6, NAVY);
-    R(cx - r * .45, cy - r * .42, r * .35, 1, NAVY); R(cx + r * .1, cy - r * .42, r * .35, 1, NAVY);
+    line(cx - r * .5, cy - r * .42, cx - r * .12, cy - r * .36, NAVY, 1); line(cx + r * .12, cy - r * .36, cx + r * .5, cy - r * .42, NAVY, 1);
   }
 }
 function buildBg() {
   var rb = mulberry(99), i, j;
   withCtx(bgC.getContext('2d'), function () {
-    // water bands
-    var cols = ['#4fe4f6', '#3fd0f2', '#34bcee', '#2aa4e8', '#228ae0', '#1d72d4', '#185cc6', '#144ab4', '#123ea0', '#103896'];
-    for (i = 0; i < HOR; i++) R(0, i, W, 1, cols[Math.min(9, i * 10 / HOR | 0)]);
-    for (i = 0; i < 6; i++) for (j = 0; j < W; j += 2) if ((i + (j >> 1)) % 3 === 0) R(j, i, 2, 1, i < 3 ? '#a8f6ff' : '#7aeeff');
-    // dithered bands
-    for (i = 8; i < HOR; i += 8) for (j = (i >> 3) & 1; j < W; j += 2) R(j, i, 1, 1, cols[Math.min(9, (i * 10 / HOR | 0) + 1)]);
-    // seabed
-    var gc = ['#14639c', '#115a94', '#0f518a', '#0d4880', '#0c3f76', '#0a366c'];
-    for (i = HOR; i < H; i++) R(0, i, W, 1, gc[Math.min(5, (i - HOR) / 27 | 0)]);
-    for (i = HOR; i < H; i += 6) for (j = (i / 6 & 1) * 3; j < W; j += 6) R(j, i, 1, 1, '#1b78ae');
+    // water and seabed gradients
+    var wg = g.createLinearGradient(0, 0, 0, HOR);
+    wg.addColorStop(0, '#4fe4f6'); wg.addColorStop(.3, '#2aa4e8'); wg.addColorStop(.65, '#185cc6'); wg.addColorStop(1, '#103896');
+    g.fillStyle = wg; g.fillRect(0, 0, W, HOR);
+    var sg2 = g.createLinearGradient(0, HOR, 0, H);
+    sg2.addColorStop(0, '#14639c'); sg2.addColorStop(1, '#0a366c');
+    g.fillStyle = sg2; g.fillRect(0, HOR, W, H - HOR);
+    g.globalAlpha = .35; for (i = 0; i < 40; i++) ell(rb() * W, 2 + rb() * 10, 6 + rb() * 10, 1.2, '#d8ffff'); g.globalAlpha = 1;
     // distant palace
     var pal = '#2fb5c8', pald = '#1d8ca8', pall = '#7ae8f0';
     R(96, 74, 128, 14, pald); R(98, 72, 124, 4, pal);
@@ -271,7 +235,7 @@ function buildBg() {
     var r2 = mulberry(7), side, k;
     for (side = 0; side < 2; side++) {
       var ox = side ? 320 : 0, sg = side ? -1 : 1;
-      for (k = 0; k < 4; k++) seaweed(ox + sg * (6 + k * 11), 240, 30 + r2() * 26, r2() * 6, 0);
+      for (k = 0; k < 4; k++) weed(ox + sg * (6 + k * 11), 240, 30 + r2() * 26, r2() * 6, 0, 3.2);
       for (k = 0; k < 6; k++) { var cc = CORAL[(r2() * 7) | 0]; branchCoral(ox + sg * (4 + r2() * 38), 238 - r2() * 26, 20 + r2() * 24, cc[0], cc[1]); }
       var bc = CORAL[side ? 3 : 2]; brainCoral(ox + sg * 24, 232, 15, bc[0], bc[1]);
       var bc2 = CORAL[side ? 1 : 0]; brainCoral(ox + sg * 8, 222, 10, bc2[0], bc2[1]);
@@ -288,9 +252,9 @@ var ptr = { down: false };
 var hits = [];
 function reset(stageNo, mode) {
   S = {
-    mode: mode || 'title', t: 0, time: 60, D: 0, px: 1.5, tx: 1.5, sz: 1, pw: 0, hearts: 3, score: 0, shells: 0, stageNo: stageNo || 1,
+    mode: mode || 'title', t: 0, time: 60, D: 0, px: 1.5, tx: 1.5, sz: 1, pw: 0, hearts: 3, score: 0, rings: 0, stageNo: stageNo || 1,
     inv: 0, slow: 0, flash: 0, flashCol: '#fff', shake: 0, hint: stageNo === 1 || !S.seen, anim: S.anim || 0, objs: [], parts: [], pops: [], rr: 8, pop: 0,
-    rng: mulberry(1234 + (stageNo || 1) * 77), genD: 24, nextGate: 46, rowN: 0, v: 12, clearT: 0, tickN: 6, seen: S.seen, bonus: 0, hintT: 0
+    rng: mulberry(1234 + (stageNo || 1) * 77), genD: 24, nextGate: 46, rowN: 0, v: 21, clearT: 0, tickN: 6, seen: S.seen, bonus: 0, hintT: 0
   };
   initAmbient();
 }
@@ -304,9 +268,10 @@ function initAmbient() {
 
 function laneOf(o) { return o.lane + (o.amp ? o.amp * Math.sin(S.t * 1.6 + o.ph) : 0); }
 function addGateRow(d) {
-  var types = ['rs', 'gs', 'gp', 'vw'], i, j;
-  if (S.rowN > 0) for (i = 3; i > 0; i--) { j = (S.rng() * (i + 1)) | 0; var tmp = types[i]; types[i] = types[j]; types[j] = tmp; }
-  S.rowN++; S.objs.push({ k: 'gate', d: d, types: types, done: false });
+  // two gates per row: one good (+SIZE or +POWER) and one bad (-SIZE or WEAKEN); the sides alternate
+  var pairs = [['gs', 'rs'], ['gp', 'vw'], ['gs', 'vw'], ['gp', 'rs']], p = pairs[S.rowN % 4].slice();
+  if (S.rowN > 0 && S.rng() < .5) p.reverse();
+  S.rowN++; S.objs.push({ k: 'gate', d: d, types: p, done: false });
 }
 function addItem(k, d, lane, amp) { S.objs.push({ k: k, d: d, lane: lane, amp: amp || 0, ph: S.rng() * 6, hit: false }); }
 function gen() {
@@ -315,17 +280,17 @@ function gen() {
     if (S.nextGate <= d) { addGateRow(S.nextGate); S.genD = S.nextGate + 12; S.nextGate += 82 + rn() * 14; continue; }
     if (d > S.nextGate - 20) { S.genD = S.nextGate; continue; }
     if (r < .42 || hz < .2 && r < .6) {
-      for (i = 0; i < 5; i++) addItem('shell', d + i * 3.4, clamp(L + .55 * Math.sin(i * .9), 0, 3));
+      for (i = 0; i < 5; i++) addItem('ring', d + i * 3.4, clamp(L + .55 * Math.sin(i * .9), 0, 3));
       S.genD += 5 * 3.4 + 7;
     } else if (r < .78 || hz < .4) {
       var kd = rn() < .5 ? 'urchin' : 'jelly', free = (L + 1 + (rn() * 3 | 0)) % 4;
       for (i = 0; i < 4; i++) if (i !== free && (i === L || rn() < hz * .8 - .1)) addItem(kd === 'jelly' && rn() < .5 ? 'jelly' : kd, d, i, kd === 'jelly' && i !== free && rn() < .4 ? .35 : 0);
-      for (i = 0; i < 3; i++) addItem('shell', d - 2 + i * 3, free);
+      for (i = 0; i < 3; i++) addItem('ring', d - 2 + i * 3, free);
       S.genD += 13;
     } else {
       var gap = (rn() * 4) | 0;
       for (i = 0; i < 4; i++) if (i !== gap) addItem(rn() < .5 ? 'urchin' : 'jelly', d, i, 0);
-      for (i = 0; i < 4; i++) addItem('shell', d - 4 + i * 3, gap);
+      for (i = 0; i < 4; i++) addItem('ring', d - 4 + i * 3, gap);
       S.genD += 14;
     }
   }
@@ -391,22 +356,22 @@ function update(dt) {
   S.rr += (tgt - S.rr) * Math.min(1, dt * 8);
 
   if (S.mode === 'title') {
-    S.D += 12 * dt; S.t += dt; S.px = 1.5 + Math.sin(S.anim * .9) * 1.2; S.tx = S.px; gen(); prune(); return;
+    S.D += 18 * dt; S.t += dt; S.px = 1.5 + Math.sin(S.anim * .9) * 1.2; S.tx = S.px; gen(); prune(); return;
   }
-  if (S.mode === 'clear' || S.mode === 'over') { S.clearT += dt; S.D += 6 * dt; return; }
+  if (S.mode === 'clear' || S.mode === 'over') { S.clearT += dt; S.D += 10 * dt; return; }
   if (S.mode !== 'play') return;
 
   S.t += dt; S.time = Math.max(0, 60 - S.t);
   if (S.inv > 0) S.inv -= dt;
   if (S.slow > 0) S.slow -= dt;
-  var base = 12 + 4 * (S.t / 60) + .9 * (S.stageNo - 1);
+  var base = 21 + 7 * (S.t / 60) + 1.6 * (S.stageNo - 1);
   var target = base * (1 + .12 * S.pw) * (S.slow > 0 ? .62 : 1);
   S.v += (target - S.v) * Math.min(1, dt * 4);
   S.D += S.v * dt; S.score += Math.round(S.v * dt * 2);
   // steering
   var dir = keys.r - keys.l;
-  if (dir) { S.px = clamp(S.px + dir * 5.2 * dt, 0, 3); S.tx = S.px; S.hint = false; }
-  else if (ptr.down) { var m = clamp(S.tx - S.px, -1, 1) * 9 * dt * 1.3, diff = S.tx - S.px; S.px += Math.abs(m) > Math.abs(diff) ? diff : m; }
+  if (dir) { S.px = clamp(S.px + dir * 7 * dt, 0, 3); S.tx = S.px; S.hint = false; }
+  else if (ptr.down) { var m = clamp(S.tx - S.px, -1, 1) * 14 * dt, diff = S.tx - S.px; S.px += Math.abs(m) > Math.abs(diff) ? diff : m; }
   S.px = clamp(S.px, 0, 3);
   if (S.hint && S.t > 7) S.hint = false;
   gen();
@@ -415,11 +380,11 @@ function update(dt) {
     o = S.objs[i]; var z = o.d - S.D;
     if (z < -9) { S.objs.splice(i, 1); continue; }
     if (o.k === 'gate') {
-      if (!o.done && z <= 0) { o.done = true; k = clamp(Math.round(S.px), 0, 3); applyGate(o.types[k]); }
+      if (!o.done && z <= 0) { o.done = true; k = S.px < 1.5 ? 0 : 1; applyGate(o.types[k]); }
     } else if (!o.hit && z <= .8 && z > -2.5) {
       if (Math.abs(S.px - laneOf(o)) < hw) {
         o.hit = true; var ex = 160 + (laneOf(o) - 1.5) * LW;
-        if (o.k === 'shell') { S.shells++; S.score += 100 + 25 * S.pw; sfx('shell'); spark(ex, TY - 8, 10, ['#ffd23a', '#fff6a0', '#fff'], 50); popup('+' + (100 + 25 * S.pw), '#ffe066', ex, TY - 28); }
+        if (o.k === 'ring') { S.rings++; S.score += 100 + 25 * S.pw; sfx('ring'); spark(ex, TY - 8, 10, ['#ffd23a', '#fff6a0', '#fff'], 50); popup('+' + (100 + 25 * S.pw), '#ffe066', ex, TY - 28); }
         else hurt(o.k);
       }
     }
@@ -437,38 +402,35 @@ function lx(l, s) { return 160 + (l - 1.5) * LW * s; }
 
 var TILES = ['#ddd3ab', '#d3c89e', '#cabe92', '#c2b586'];
 function drawRoad() {
-  var D = S.D, FOG = '#2a8fd8', y, i;
-  for (y = HOR + 1; y < H; y++) {
-    var s = (y - HOR) / (YB - HOR), z = CZ * (1 / s - 1), sb = (y - 1 - HOR) / (YB - HOR), zb = CZ * (1 / sb - 1);
+  var D = S.D, FOG = '#2a8fd8', y, i, rh = 1 / Q, n;
+  for (n = 0; (y = HOR + 1 + n * rh) < H; n++) {
+    var s = (y - HOR) / (YB - HOR), z = CZ * (1 / s - 1), sb = (y - rh - HOR) / (YB - HOR), zb = CZ * (1 / sb - 1);
     var fog = Math.min(.8, Math.max(0, (.6 - s) * 1.5));
     var qa = (z + D) / 5, qb = (zb + D) / 5, rI = Math.floor(qa), mort = Math.floor(qb) !== rI, lw = LW * s;
-    var x0 = Math.round(160 - 2 * lw), x1 = Math.round(160 + 2 * lw);
-    R(x0, y, x1 - x0, 1, mix('#8a8160', FOG, fog));
+    var x0 = 160 - 2 * lw, x1 = 160 + 2 * lw;
+    R(x0, y, x1 - x0, rh, mix('#8a8160', FOG, fog));
     if (!mort) {
       var ed = rI & 1 ? [-2, -1.5, -.5, .5, 1.5, 2] : [-2, -1, 0, 1, 2], e;
       for (e = 0; e < ed.length - 1; e++) {
-        var a = Math.round(160 + ed[e] * lw), b = Math.round(160 + ed[e + 1] * lw), hh = hash(rI, ed[e] * 2 + 9), c = TILES[hh & 3];
+        var a = 160 + ed[e] * lw, b = 160 + ed[e + 1] * lw, hh = hash(rI, ed[e] * 2 + 9), c = TILES[hh & 3];
         if (hh % 7 === 0) c = '#b3a67c'; else if (hh % 11 === 0) c = '#a9cdb0';
-        R(a, y, b - a - (s > .1 ? 1 : 0), 1, mix(c, FOG, fog));
-        if (hh % 5 === 0 && b - a > 6 && s > .35) R(a + 2 + hh % 5, y, 2, 1, mix('#bcae82', FOG, fog));
+        R(a, y, b - a - (s > .1 ? 1 : 0), rh, mix(c, FOG, fog));
       }
     }
-    // curbs
-    var cw = Math.max(1, Math.round(14 * s)), cc = mix(rI & 1 ? '#9fb0bb' : '#8397a8', FOG, fog);
-    R(x0 - cw, y, cw, 1, mort ? mix('#5a6a80', FOG, fog) : cc); R(x1, y, cw, 1, mort ? mix('#5a6a80', FOG, fog) : cc);
-    // glowing lane lines
+    var cw = Math.max(1, 14 * s), cc = mix(rI & 1 ? '#9fb0bb' : '#8397a8', FOG, fog);
+    R(x0 - cw, y, cw, rh, mort ? mix('#5a6a80', FOG, fog) : cc); R(x1, y, cw, rh, mort ? mix('#5a6a80', FOG, fog) : cc);
     var pulse = .5 + .25 * Math.sin(S.anim * 5 + y * .08);
     for (i = -2; i <= 2; i++) {
-      var lxp = Math.round(160 + i * lw);
-      g.globalAlpha = (pulse * .55) * (1 - fog * .6); R(lxp - 1, y, 3, 1, '#4ff0ff');
-      g.globalAlpha = 1 - fog * .5; R(lxp, y, s > .75 ? 2 : 1, 1, '#c8fbff');
+      var lxp = 160 + i * lw;
+      g.globalAlpha = (pulse * .55) * (1 - fog * .6); R(lxp - 1.5, y, 3, rh, '#4ff0ff');
+      g.globalAlpha = 1 - fog * .5; R(lxp - .5, y, s > .75 ? 1.6 : 1, rh, '#c8fbff');
     }
     g.globalAlpha = 1;
   }
 }
 function drawBgDynamic() {
   var i, t = S.anim;
-  g.drawImage(bgC, 0, 0);
+  g.drawImage(bgC, 0, 0, W, H);
   // light shafts
   for (i = 0; i < 6; i++) {
     var x = 20 + i * 56 + Math.sin(t * .4 + i) * 6;
@@ -478,9 +440,9 @@ function drawBgDynamic() {
   g.globalAlpha = 1;
   // manta
   var mx = 60 + 40 * Math.sin(t * .13), my = 48 + 6 * Math.sin(t * .5);
-  for (i = -26; i <= 26; i++) {
+  for (i = -26; i <= 26; i += 1 / Q) {
     var a = Math.abs(i) / 26, top = -6 * (1 - a) + 6 * a * a, bot = 5 * (1 - a) + 10 * a * (1 - a * .2) + Math.sin(t * 2 + i * .12) * a * 2;
-    R(mx + i, my + top, 1, bot - top + 1, a < .35 ? '#2a58c8' : '#1b3f9e'); R(mx + i, my + top, 1, 1, '#6ea0ff');
+    R(mx + i, my + top, 1 / Q, bot - top + 1, a < .35 ? '#2a58c8' : '#1b3f9e'); R(mx + i, my + top, 1 / Q, 1, '#6ea0ff');
   }
   R(mx - 4, my - 8, 3, 3, '#2a58c8'); R(mx + 2, my - 8, 3, 3, '#2a58c8'); R(mx - 1, my + 6, 2, 14, '#1b3f9e'); R(mx - 6, my - 1, 2, 2, '#fff');
   // fish
@@ -496,57 +458,55 @@ function drawBgDynamic() {
   }
 }
 function drawBubbles(front) {
+  g.lineWidth = .8;
   for (var i = 0; i < bubbles.length; i++) {
     var b = bubbles[i]; if ((b.s > 2) !== front) continue;
-    var x = Math.round(b.x + Math.sin(S.anim + b.ph) * 3), y = Math.round(b.y);
-    if (b.s === 1) R(x, y, 1, 1, '#d8fbff');
-    else { var n = b.s + 1; R(x + 1, y, n - 2, 1, '#bff4ff'); R(x + 1, y + n - 1, n - 2, 1, '#8fe4ff'); R(x, y + 1, 1, n - 2, '#bff4ff'); R(x + n - 1, y + 1, 1, n - 2, '#8fe4ff'); R(x + 1, y + 1, 1, 1, '#fff'); }
+    var x = b.x + Math.sin(S.anim + b.ph) * 3, y = b.y, r = b.s * .6 + .4;
+    g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fillStyle = 'rgba(190,245,255,.22)'; g.fill(); g.strokeStyle = 'rgba(225,252,255,.85)'; g.stroke();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(x - r * .35, y - r * .35, Math.max(.3, r * .22), 0, 6.2832); g.fill();
   }
 }
 
-function fan(cx, cy, r, col, th) {
-  var ry = r * .85 + th, rr = r + th, dy;
-  for (dy = -Math.ceil(ry); dy <= 0; dy++) { var q = 1 - (dy / ry) * (dy / ry); if (q < 0) continue; var hw = Math.round(rr * Math.sqrt(q)); R(cx - hw, cy + dy, hw * 2 + 1, 1, col); }
-  var bt = Math.round(r * .55 + th);
-  for (dy = 1; dy <= bt; dy++) { var hw2 = Math.round(rr * (1 - dy / (bt + 1) * .75)); R(cx - hw2, cy + dy, hw2 * 2 + 1, 1, col); }
-}
-function scallop(cx, cy, r, bright) {
-  var th = r > 7 ? 2 : 1; fan(cx, cy, r, NAVY, th); fan(cx, cy, r, bright ? '#ffd23a' : '#f2b01e', 0);
-  fan(cx - r * .15, cy - r * .2, r * .6, '#ffe97a', 0);
-  for (var i = -3; i <= 3; i++) line(cx + i * r * .08, cy + r * .45, cx + i * r * .3, cy - r * .75, '#b8780c', 1);
-  R(cx - r * .3, cy + r * .6, r * .6, Math.max(1, r * .18), '#b8780c');
+function ring(cx, cy, r, spin, bright) {
+  var rx = Math.max(r * .16, r * Math.abs(Math.cos(spin))), w = Math.max(1.6, r * .36), i;
+  g.lineCap = 'round';
+  g.strokeStyle = NAVY; g.lineWidth = w + 2.2; g.beginPath(); g.ellipse(cx, cy, rx, r, 0, 0, 6.2832); g.stroke();
+  g.strokeStyle = bright ? '#ffd23a' : '#f2b01e'; g.lineWidth = w; g.beginPath(); g.ellipse(cx, cy, rx, r, 0, 0, 6.2832); g.stroke();
+  g.strokeStyle = '#fff2a8'; g.lineWidth = w * .35; g.beginPath(); g.ellipse(cx, cy, rx, r, 0, 3.6, 4.9); g.stroke();
+  g.strokeStyle = '#b8780c'; g.lineWidth = w * .3; g.beginPath(); g.ellipse(cx, cy, rx, r, 0, 0.5, 1.5); g.stroke();
 }
 function bolt(cx, cy, r, col) {
-  var k = Math.max(1, Math.round(r / 5)), rows = ['..XXXX', '.XXXX.', 'XXXX..', 'XXXXXX', '..XXX.', '.XXX..', '.XX...', 'XX....'];
-  sprO(rows, cx - 3 * k, cy - 4 * k, k, NAVY); spr(rows, cx - 3 * k, cy - 4 * k, k, { X: col });
+  poly([.35, -1, -.7, .15, -.05, .15, -.4, 1, .75, -.25, .05, -.25], cx, cy, r, col, [NAVY, Math.max(1.5, r * .3)]);
 }
 function xmark(cx, cy, r) {
-  var k = Math.max(1, Math.round(r / 4)), rows = ['X...X', '.X.X.', '..X..', '.X.X.', 'X...X'];
-  R(cx - 3 * k, cy - 3 * k, 6 * k, 6 * k, NAVY); R(cx - 3 * k + 1, cy - 3 * k + 1, 6 * k - 2, 6 * k - 2, '#5a0a1e');
-  spr(rows, cx - 2.5 * k, cy - 2.5 * k, k, { X: '#ff3a4a' });
+  rrect(cx - r, cy - r, r * 2, r * 2, r * .35, NAVY); rrect(cx - r + 1, cy - r + 1, r * 2 - 2, r * 2 - 2, r * .3, '#5a0a1e');
+  line(cx - r * .5, cy - r * .5, cx + r * .5, cy + r * .5, '#ff3a4a', Math.max(1.4, r * .35)); line(cx + r * .5, cy - r * .5, cx - r * .5, cy + r * .5, '#ff3a4a', Math.max(1.4, r * .35));
 }
 function chev(cx, cy, w, dir, col, t) {
-  var hh = Math.max(2, Math.round(w * .3)), i;
-  for (var pass = 0; pass < 2; pass++) for (i = 0; i <= hh; i++) {
-    var y = dir < 0 ? cy - hh / 2 + i : cy + hh / 2 - i, dx = i * (w / 2) / hh, c = pass ? col : NAVY, e = pass ? 0 : 1;
-    R(cx - dx - e, y - e, t + e * 2, 1 + e * 2, c); R(cx + dx - t + 1 - e, y - e, t + e * 2, 1 + e * 2, c);
+  var hh = Math.max(2, w * .3), pts = [cx - w / 2, cy + dir * hh / 2, cx, cy - dir * hh / 2, cx + w / 2, cy + dir * hh / 2], pass;
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  for (pass = 0; pass < 2; pass++) {
+    g.strokeStyle = pass ? col : NAVY; g.lineWidth = pass ? t : t + 2;
+    g.beginPath(); g.moveTo(pts[0], pts[1]); g.lineTo(pts[2], pts[3]); g.lineTo(pts[4], pts[5]); g.stroke();
   }
 }
 function jelly(cx, cy, r, t, col, dark) {
-  var i, j;
-  for (i = -2; i <= 2; i++) for (j = 0; j < 6; j++) {
-    var x = cx + i * r * .38 + Math.sin(t * 5 + j * .9 + i) * r * .15, y = cy + r * .3 + j * r * .22;
-    R(x - 1, y - 1, 3, 3, NAVY);
+  var i, j, x, y;
+  g.lineCap = 'round';
+  for (i = -2; i <= 2; i++) {
+    for (j = 0; j < 2; j++) {
+      g.strokeStyle = j ? (i & 1 ? dark : col) : NAVY; g.lineWidth = j ? Math.max(1.1, r * .12) : Math.max(1.1, r * .12) + 1.6;
+      g.beginPath(); g.moveTo(cx + i * r * .38, cy + r * .2);
+      for (y = 1; y <= 6; y++) g.lineTo(cx + i * r * .38 + Math.sin(t * 5 + y * .9 + i) * r * .15, cy + r * .2 + y * r * .22);
+      g.stroke();
+    }
   }
-  for (i = -2; i <= 2; i++) for (j = 0; j < 6; j++) {
-    x = cx + i * r * .38 + Math.sin(t * 5 + j * .9 + i) * r * .15; y = cy + r * .3 + j * r * .22; R(x, y, Math.max(1, r > 9 ? 2 : 1), Math.max(1, r * .22), j & 1 ? dark : col);
-  }
-  var dy;
-  for (dy = -Math.ceil(r + 1); dy <= Math.ceil(r * .3); dy++) { var q = 1 - (dy / (r * 1.0 + 1)) * (dy / (r * 1.0 + 1)); if (q < 0) continue; var hw = Math.round((r + 1) * Math.sqrt(q)); R(cx - hw, cy + dy, hw * 2 + 1, 1, NAVY); }
-  for (dy = -Math.ceil(r); dy <= Math.ceil(r * .2); dy++) { q = 1 - (dy / r) * (dy / r); if (q < 0) continue; hw = Math.round(r * Math.sqrt(q)); R(cx - hw, cy + dy, hw * 2 + 1, 1, dy < -r * .35 ? '#f0a0ff' : col); }
-  R(cx - r * .5, cy - r * .7, r * .5, 1, '#fff');
+  function dome(rr, c) { g.fillStyle = c; g.beginPath(); g.ellipse(cx, cy + r * .2, rr, rr * 1.2, 0, 3.1416, 6.2832); g.closePath(); g.fill(); }
+  dome(r + 1.2, NAVY); dome(r, col);
+  g.globalAlpha = .55; ell(cx - r * .2, cy - r * .5, r * .55, r * .3, '#f0a0ff'); g.globalAlpha = 1;
+  ell(cx - r * .45, cy - r * .62, r * .22, r * .1, '#fff');
   var e = Math.max(1, r * .15); ell(cx - r * .35, cy - r * .15, e, e * 1.2, NAVY); ell(cx + r * .35, cy - r * .15, e, e * 1.2, NAVY);
-  R(cx - r * .35, cy - r * .2, 1, 1, '#fff'); R(cx + r * .35, cy - r * .2, 1, 1, '#fff');
+  ell(cx - r * .32, cy - r * .2, e * .35, e * .35, '#fff'); ell(cx + r * .38, cy - r * .2, e * .35, e * .35, '#fff');
 }
 var GP = {
   gs: { stone: '#e8cf74', glow: '#ffe066', rim: '#ffd23a', in1: '#0e5a24', in2m: '#1c9a3c', in2: '#3ae060', lab: '+SIZE' },
@@ -558,33 +518,29 @@ function gshape(cx, by, w, h, col) {
   var ry = h * .34, rx = w / 2; ell(cx, by - h + ry, rx, ry, col); R(cx - rx, by - h + ry, w, h - ry, col);
 }
 function drawGate(type, cx, by, s, gi) {
-  var gold = type === 'gs', P = GP[type], w = LW * s * (gold ? .96 : .84), h = (gold ? 122 : 100) * s, th = s > .45 ? 2 : 1, t = S.anim, i;
-  g.globalAlpha = .26 + .1 * Math.sin(t * 4 + gi); ell(cx, by - h * .5, w * .75, h * .62, P.glow); g.globalAlpha = 1;
+  var gold = type === 'gs', P = GP[type], w = LW * 2 * s * .9, h = (gold ? 126 : 108) * s, th = Math.max(1, 2 * s), t = S.anim, i;
+  var fa = g.globalAlpha; g.globalAlpha = fa * (.26 + .1 * Math.sin(t * 4 + gi)); ell(cx, by - h * .5, w * .7, h * .62, P.glow); g.globalAlpha = fa;
   gshape(cx, by, w + 2 * th, h + th, NAVY); gshape(cx, by, w, h, P.stone);
-  var f = Math.max(2, w * .14), oh = h - f * 1.2, ow = w - 2 * f;
+  var f = Math.max(2, w * .1), oh = h - f * 1.5, ow = w - 2 * f;
   if (s > .4) for (i = 1; i < 6; i++) { R(cx - w / 2, by - i * h * .12, f, 1, '#7d8c98'); R(cx + w / 2 - f, by - i * h * .12 - 3 * s, f, 1, '#7d8c98'); }
   gshape(cx, by, ow + 2, oh + 1, P.rim); gshape(cx, by, ow, oh, P.in1);
   R(cx - ow / 2, by - oh * .55, ow, oh * .18, mix(P.in1, P.in2m, .5)); R(cx - ow / 2, by - oh * .37, ow, oh * .2, P.in2m); R(cx - ow / 2, by - oh * .17, ow, oh * .17, P.in2);
-  // moss and corals
   var ry = h * .34;
-  for (i = 0; i < 7; i++) { var a = .4 + i * .38, mx = cx + w / 2 * Math.cos(a), my = by - h + ry - ry * Math.sin(a); R(mx - 1, my - 1, Math.max(2, 3 * s * 1.5), Math.max(2, 2 * s * 1.5), i & 1 ? '#2fd04a' : '#1e9c3c'); }
-  R(cx - w / 2 - 2 * s, by - 6 * s, 5 * s + 1, 6 * s + 1, ['#ff4fa3', '#ff8a1f', '#d62ad0', '#ffd21f'][gi]);
-  R(cx + w / 2 - 3 * s, by - 5 * s, 4 * s + 1, 5 * s + 1, ['#ff8a1f', '#ff4fa3', '#ffd21f', '#d62ad0'][gi]);
-  // label
-  var lab = P.lab, kk = 0, q;
-  for (q = 3; q >= 1; q--) if (tw(lab, q) <= w * 1.04) { kk = q; break; }
-  var emR = Math.min(ow * .34, oh * .15);
-  if (kk) {
-    var ly = by - oh * .6; R(cx - tw(lab, kk) / 2 - 2, ly - 2, tw(lab, kk) + 4, 5 * kk + 4, 'rgba(5,14,50,.82)');
-    text(lab, cx, ly, kk, '#fff', kk > 1 ? NAVY : null, 'c');
+  for (i = 0; i < 9; i++) { var a = .4 + i * .29, mx = cx + w / 2 * Math.cos(a), my = by - h + ry - ry * Math.sin(a); ell(mx, my, Math.max(1.4, 2.4 * s), Math.max(1.2, 1.8 * s), i & 1 ? '#2fd04a' : '#1e9c3c'); }
+  ell(cx - w / 2 - s, by - 3 * s, Math.max(1.5, 4 * s), Math.max(1.5, 4 * s), ['#ff4fa3', '#ff8a1f'][gi & 1]);
+  ell(cx + w / 2 - s, by - 2.5 * s, Math.max(1.5, 3.5 * s), Math.max(1.5, 3.5 * s), ['#ffd21f', '#d62ad0'][gi & 1]);
+  var lab = P.lab, kk = Math.min(3.4, w * .78 / tw(lab, 1));
+  var emR = Math.min(ow * .17, oh * .17);
+  if (kk >= 1) {
+    var ly = by - oh * .6, lw2 = tw(lab, kk); rrect(cx - lw2 / 2 - 3, ly - 2, lw2 + 6, 5 * kk + 5, 3, 'rgba(5,14,50,.82)');
+    text(lab, cx, ly, kk, '#fff', kk > 1.4 ? NAVY : null, 'c');
   }
-  // emblems
-  var ey = by - oh * .36;
-  if (type === 'gs') { scallop(cx, ey + emR * .3, emR * 1.15, true); chev(cx, by - oh * .12, emR * 1.2, -1, '#3aff60', Math.max(1, Math.round(emR * .22))); if (s > .35) scallop(cx, by - h - 1 * s + ry * .35, Math.max(3, w * .17), true); }
-  else if (type === 'gp') { bolt(cx, ey, emR * 1.05, '#fff'); chev(cx, by - oh * .12, emR * 1.2, -1, '#4ff0ff', Math.max(1, Math.round(emR * .22))); bolt(cx, by - oh * .8, emR * .55, '#fff'); }
-  else if (type === 'rs') { urchinSpr(cx, ey, Math.max(2, emR * .65), t, false); chev(cx, by - oh * .12, emR * 1.2, 1, '#ff4a5a', Math.max(1, Math.round(emR * .22))); xmark(cx, by - oh * .82, emR * .7); }
-  else { jelly(cx, ey - emR * .1, Math.max(2, emR * .8), t, '#d070ff', '#8a2cd0'); chev(cx, by - oh * .12, emR * 1.2, 1, '#c070ff', Math.max(1, Math.round(emR * .22))); xmark(cx, by - oh * .82, emR * .7); }
-  if (gold && s > .3) { for (i = 0; i < 3; i++) { var sp = (t * 2 + i * 1.7) % 3; if (sp < .6) R(cx - w * .4 + i * w * .4, by - h * (.3 + i * .15), 1, 1, '#fff'); } }
+  var ey = by - oh * .34;
+  if (type === 'gs') { ring(cx, ey, emR * 1.15, 0, true); chev(cx, by - oh * .1, emR * 1.5, 1, '#3aff60', Math.max(1.4, emR * .26)); if (s > .35) ring(cx, by - h - 1 * s + ry * .35, Math.max(3, w * .08), 0, true); }
+  else if (type === 'gp') { bolt(cx, ey, emR * 1.05, '#fff'); chev(cx, by - oh * .1, emR * 1.5, 1, '#4ff0ff', Math.max(1.4, emR * .26)); bolt(cx, by - oh * .82, emR * .5, '#fff'); }
+  else if (type === 'rs') { urchinSpr(cx, ey, Math.max(2, emR * .7), t, false); chev(cx, by - oh * .1, emR * 1.5, -1, '#ff4a5a', Math.max(1.4, emR * .26)); xmark(cx, by - oh * .82, emR * .55); }
+  else { jelly(cx, ey - emR * .1, Math.max(2, emR * .85), t, '#d070ff', '#8a2cd0'); chev(cx, by - oh * .1, emR * 1.5, -1, '#c070ff', Math.max(1.4, emR * .26)); xmark(cx, by - oh * .82, emR * .55); }
+  if (gold && s > .3) { for (i = 0; i < 3; i++) { var sp = (t * 2 + i * 1.7) % 3; if (sp < .6) ell(cx - w * .4 + i * w * .4, by - h * (.3 + i * .15), 1, 1, '#fff'); } }
 }
 function drawProp(kind, side, z, idx) {
   var s = sc(z), by = yAt(z), hs = hash(idx, side), ex = 2 * LW * s + 16 * s + (hs % 14) * s, x = 160 + side * ex, fg = Math.min(.8, Math.max(0, (.55 - s) * 1.4));
@@ -597,16 +553,16 @@ function drawProp(kind, side, z, idx) {
   } else if (kind === 1) {
     var cc = CORAL[hs % 7]; branchCoral(x, by, 30 * s, cc[0], cc[1]);
   } else {
-    var hh = 34 * s; for (var i = 0; i < hh; i += 2) { var o = Math.sin(i * .25 + S.anim * 2 + idx) * 3 * s * (i / hh); R(x + o, by - i, Math.max(2, 3 * s), 2, (i >> 2) & 1 ? '#2fd04a' : '#1e9c3c'); }
+    weed(x, by, 34 * s, idx, S.anim * 2, Math.max(1.6, 3.2 * s));
     brainCoral(x + 8 * s * side, by - 3 * s, 8 * s, CORAL[(hs >>> 3) % 7][0], CORAL[(hs >>> 3) % 7][1]);
   }
 }
 function drawItem(o, z) {
   var s = sc(z), lane = laneOf(o), x = lx(lane, s), by = yAt(z), bob = Math.sin(S.anim * 4 + o.ph) * 2 * s;
   g.globalAlpha = .3; ell(x, by, 14 * s, 4 * s, NAVY); g.globalAlpha = 1;
-  if (o.k === 'shell') {
-    if (o.hit) return; var r = 12 * s; scallop(x, by - 14 * s + bob, Math.max(2, r), true);
-    if (((S.anim * 3 + o.ph) % 2) < .2) { R(x + r, by - 26 * s, 1, 3, '#fff'); R(x + r - 1, by - 25 * s, 3, 1, '#fff'); }
+  if (o.k === 'ring') {
+    if (o.hit) return; var r = 12 * s; ring(x, by - 15 * s + bob, Math.max(2, r), S.anim * 3 + o.ph, true);
+    if (((S.anim * 3 + o.ph) % 2) < .2) { line(x + r, by - 28 * s, x + r, by - 24 * s, '#fff', 1); line(x + r - 2, by - 26 * s, x + r + 2, by - 26 * s, '#fff', 1); }
   } else if (o.k === 'urchin') {
     urchinSpr(x, by - 14 * s + bob * .3, Math.max(2, 12 * s), S.anim, s > .4);
   } else {
@@ -657,7 +613,7 @@ function drawWake(cx, cy, Rr) {
   g.globalAlpha = .5; ell(cx, cy + Rr * 1.15, Rr * .6, 3, '#e8ffff'); g.globalAlpha = 1;
 }
 function drawStreaks() {
-  var sp = S.v / 12, i;
+  var sp = S.v / 21, i;
   for (i = 0; i < 14; i++) {
     var a = i * 2.399 + .5, ph = (S.anim * (.6 + sp * .3) + i * .31) % 1, r1 = 40 + ph * ph * 190, r2 = r1 + 4 + ph * 12;
     var x1 = 160 + Math.cos(a) * r1 * 1.3, y1 = HOR + 20 + Math.sin(a) * r1 * .8, x2 = 160 + Math.cos(a) * r2 * 1.3, y2 = HOR + 20 + Math.sin(a) * r2 * .8;
@@ -667,34 +623,39 @@ function drawStreaks() {
 }
 
 /* ---------- HUD ---------- */
-function panel(x, y, w, h) { R(x, y, w, h, '#fff'); R(x + 1, y + 1, w - 2, h - 2, NAVY); R(x + 2, y + 2, w - 4, h - 4, '#12308a'); R(x + 2, y + 2, w - 4, 1, '#2f64d8'); R(x, y, 1, 1, NAVY); R(x + w - 1, y, 1, 1, NAVY); }
-var HEART = ['.XX.XX.', 'XWXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
+function panel(x, y, w, h) { rrect(x, y, w, h, 3, '#fff'); rrect(x + 1, y + 1, w - 2, h - 2, 2.5, NAVY); rrect(x + 2, y + 2, w - 4, h - 4, 2, '#12308a'); rrect(x + 2.5, y + 2.5, w - 5, 2.5, 1.2, '#2f64d8'); }
+function heart(cx, cy, s, fill, hi) {
+  g.beginPath(); g.moveTo(cx, cy + 3.4 * s);
+  g.bezierCurveTo(cx - 5 * s, cy - .2 * s, cx - 3.2 * s, cy - 3.8 * s, cx, cy - 1.4 * s);
+  g.bezierCurveTo(cx + 3.2 * s, cy - 3.8 * s, cx + 5 * s, cy - .2 * s, cx, cy + 3.4 * s); g.closePath();
+  g.lineJoin = 'round'; g.lineWidth = 1.6; g.strokeStyle = NAVY; g.stroke(); g.fillStyle = fill; g.fill();
+  if (hi) ell(cx - 1.6 * s, cy - 1.2 * s, .9 * s, .6 * s, hi);
+}
 function drawHud() {
   var i;
   panel(0, 0, 76, 25); text('1P', 4, 4, 2, '#fff', NAVY);
   ell(34, 9, 6, 5, NAVY); ell(34, 9, 5, 4, '#5cf04a'); R(31, 7, 2, 2, '#fff'); R(36, 7, 2, 2, '#fff'); R(32, 8, 1, 1, NAVY); R(37, 8, 1, 1, NAVY); R(33, 11, 3, 1, '#0a5a20');
   text('x' + Math.max(0, S.hearts), 44, 4, 2, '#fff', NAVY);
-  for (i = 0; i < 3; i++) { sprO(HEART, 6 + i * 11, 15, 1, NAVY); spr(HEART, 6 + i * 11, 15, 1, i < S.hearts ? { X: '#ff2d4a', W: '#ffb0b8' } : { X: '#3a3860', W: '#3a3860' }); }
-  panel(78, 0, 82, 25); text('SCORE', 119, 3, 1, '#fff', null, 'c'); text(String(Math.min(99999999, S.score)).padStart(8, '0'), 119, 11, 2, '#ffe14a', NAVY, 'c');
+  for (i = 0; i < 3; i++) heart(10 + i * 11, 18, 1, i < S.hearts ? '#ff2d4a' : '#3a3860', i < S.hearts ? '#ffb0b8' : null);
+  panel(78, 0, 82, 25); text('SCORE', 119, 3, .9, '#fff', null, 'c'); text(String(Math.min(99999999, S.score)).padStart(8, '0'), 119, 11, 1.8, '#ffe14a', NAVY, 'c');
   panel(162, 0, 38, 25); text('TIME', 181, 3, 1, '#fff', null, 'c'); text(String(Math.ceil(S.time)).padStart(3, '0'), 181, 11, 2, S.time <= 10 && S.mode === 'play' && (S.anim * 4 | 0) & 1 ? '#ff6a6a' : '#fff', NAVY, 'c');
   panel(202, 0, 62, 25); text('SIZE x' + ((S.sz + 1) >> 1), 233, 3, 1, '#fff', null, 'c');
   R(207, 11, 52, 9, '#fff'); R(208, 12, 50, 7, '#000');
   for (i = 0; i < 6; i++) { R(209 + i * 8, 13, 7, 5, i < S.sz ? '#46e04a' : '#1a2a1a'); if (i < S.sz) R(209 + i * 8, 13, 7, 1, '#b8ff9a'); }
-  panel(266, 0, 54, 25); text('STAGE ' + S.stageNo + '-1', 293, 3, 1, '#fff', null, 'c'); text('CORAL REEF RUN', 293, 12, 1, '#7af0ff', null, 'c');
+  panel(266, 0, 54, 25); text('STAGE ' + S.stageNo + '-1', 293, 3, 1, '#fff', null, 'c'); text('CORAL REEF RUN', 293, 13, .8, '#7af0ff', null, 'c');
   text('POWER', 4, 28, 1, '#fff', NAVY);
   for (i = 0; i < 3; i++) R(26 + i * 6, 28, 5, 5, i < S.pw ? '#4ff0ff' : '#0a2a4a');
 }
-var SPK = ['..X..', '.XX.X', 'XXX..', 'XXX..', '.XX.X', '..X..'];
 function muteBtn() { return { x: 4, y: 218, w: 18, h: 18 }; }
 function drawMute() {
   var m = muteBtn(); panel(m.x, m.y, m.w, m.h);
-  spr(['..X', '.XX', 'XXX', 'XXX', '.XX', '..X'], m.x + 4, m.y + 6, 1, { X: '#fff' });
+  poly([-3, -1, -1.4, -1, .6, -2.6, .6, 2.6, -1.4, 1, -3, 1], m.x + 7, m.y + 9, 1.4, '#fff');
   if (muted) { line(m.x + 9, m.y + 5, m.x + 14, m.y + 12, '#ff4a5a', 1); line(m.x + 14, m.y + 5, m.x + 9, m.y + 12, '#ff4a5a', 1); }
-  else { R(m.x + 10, m.y + 7, 1, 4, '#fff'); R(m.x + 12, m.y + 5, 1, 8, '#fff'); }
+  else { g.strokeStyle = '#fff'; g.lineWidth = 1.1; g.beginPath(); g.arc(m.x + 9, m.y + 9, 2.6, -1, 1); g.stroke(); g.beginPath(); g.arc(m.x + 9, m.y + 9, 5, -1, 1); g.stroke(); }
 }
 function button(label, cx, cy, k) {
-  var w = tw(label, k) + 16, h = 5 * k + 12, x = cx - w / 2, y = cy - h / 2, pulse = (S.anim * 3 | 0) & 1;
-  R(x - 2, y - 2, w + 4, h + 4, NAVY); R(x, y, w, h, '#fff'); R(x + 2, y + 2, w - 4, h - 4, pulse ? '#3ee05a' : '#2fc84a'); R(x + 2, y + 2, w - 4, 3, '#8affa0');
+  var w = tw(label, k) + 18, h = 5 * k + 12, x = cx - w / 2, y = cy - h / 2, pulse = (S.anim * 3 | 0) & 1;
+  rrect(x - 2, y - 2, w + 4, h + 4, 6, NAVY); rrect(x, y, w, h, 5, '#fff'); rrect(x + 2, y + 2, w - 4, h - 4, 4, pulse ? '#3ee05a' : '#2fc84a'); rrect(x + 3, y + 3, w - 6, 3, 1.5, '#8affa0');
   text(label, cx, y + 6, k, '#fff', '#0a5a20', 'c'); return { x: x, y: y, w: w, h: h };
 }
 var btn = null;
@@ -704,18 +665,18 @@ function drawOverlay() {
   if (S.mode === 'title') {
     dim(.35);
     text('CORAL', cx, 56, 7, '#ffe14a', NAVY, 'c'); text('REEF RUN', cx, 94, 7, '#5ff0ff', NAVY, 'c');
-    text('STEER TO THE BEST GATE', cx, 138, 2, '#fff', NAVY, 'c');
+    text('GRAB RINGS - PICK THE GOOD GATE', cx, 138, 1.6, '#fff', NAVY, 'c');
     btn = button('TAP TO PLAY', cx, 176, 3);
     text('DRAG OR ARROW KEYS', cx, 206, 1, '#fff', NAVY, 'c');
   } else if (S.mode === 'clear') {
     dim(.55);
     panel(60, 40, 200, 160);
     text('STAGE CLEAR!', cx, 50, 4, '#ffe14a', NAVY, 'c');
-    var rows = [['SCORE', S.score - S.bonus], ['SHELLS', S.shells], ['SIZE BONUS', S.sz * 500], ['HEART BONUS', S.hearts * 300]], i;
+    var rows = [['SCORE', S.score - S.bonus], ['RINGS', S.rings], ['SIZE BONUS', S.sz * 500], ['HEART BONUS', S.hearts * 300]], i;
     for (i = 0; i < rows.length; i++) { text(rows[i][0], 74, 80 + i * 14, 2, '#fff', NAVY); text(String(rows[i][1]), 246, 80 + i * 14, 2, '#ffe14a', NAVY, 'r'); }
     R(74, 135, 172, 1, '#fff'); text('TOTAL', 74, 140, 2, '#fff', NAVY); text(String(S.score), 246, 140, 2, '#5ff0ff', NAVY, 'r');
     btn = button('PLAY AGAIN', cx, 178, 3);
-    for (i = 0; i < 3; i++) { scallop(cx - 40 + i * 40, 66, 8, i <= (S.sz - 1) >> 1); }
+    for (i = 0; i < 3; i++) ring(cx - 40 + i * 40, 66, 8, 0, i <= (S.sz - 1) >> 1);
   } else if (S.mode === 'over') {
     dim(.55); panel(60, 56, 200, 130);
     text('OH NO!', cx, 66, 5, '#ff9a9a', NAVY, 'c'); text('THE REEF NEEDS YOU', cx, 100, 2, '#fff', NAVY, 'c');
@@ -726,15 +687,15 @@ function drawOverlay() {
   }
   if (S.mode === 'play' && S.hint) {
     var a = Math.min(1, (7 - S.t) / 1.5); g.globalAlpha = Math.max(0, a);
-    R(40, 36, 240, 28, 'rgba(5,14,50,.7)');
-    text('DRAG OR USE ARROW KEYS', cx, 40, 2, '#fff', NAVY, 'c'); text('PICK THE GOLD +SIZE GATE', cx, 54, 1, '#ffe14a', NAVY, 'c');
+    rrect(40, 34, 240, 32, 5, 'rgba(5,14,50,.7)');
+    text('DRAG OR USE ARROW KEYS', cx, 40, 2, '#fff', NAVY, 'c'); text('GRAB RINGS - PICK THE GOOD GATE', cx, 55, 1, '#ffe14a', NAVY, 'c');
     g.globalAlpha = 1;
   }
 }
 
 function render() {
-  var shx = S.shake > 0 ? Math.round((Math.random() - .5) * 4) : 0, shy = S.shake > 0 ? Math.round((Math.random() - .5) * 3) : 0, i;
-  g.save(); g.translate(shx, shy);
+  var shx = S.shake > 0 ? (Math.random() - .5) * 4 : 0, shy = S.shake > 0 ? (Math.random() - .5) * 3 : 0, i;
+  g.setTransform(Q, 0, 0, Q, 0, 0); g.save(); g.translate(shx, shy);
   drawBgDynamic(); drawBubbles(false); drawRoad();
   // depth-sorted scene
   var list = [], D = S.D, base = Math.floor(D / 15) - 1;
@@ -745,7 +706,7 @@ function render() {
     var e = list[i], fadeA = clamp((64 - e.z) / 12, 0, 1);
     g.globalAlpha = fadeA;
     if (e.o) {
-      if (e.o.k === 'gate') { var s = sc(e.z), by = yAt(e.z); for (var l = 0; l < 4; l++) if (!(e.o.done && e.z < -2)) drawGate(e.o.types[l], lx(l, s), by, s, l); }
+      if (e.o.k === 'gate') { var s = sc(e.z), by = yAt(e.z); for (var l = 0; l < 2; l++) if (!(e.o.done && e.z < -2)) drawGate(e.o.types[l], lx(l ? 2.5 : .5, s), by, s, l); }
       else if (e.z > -4) drawItem(e.o, e.z);
     } else drawProp(((e.idx % 3) + 3) % 3, e.side, e.z, e.idx);
     g.globalAlpha = 1;
@@ -758,7 +719,7 @@ function render() {
     if (!(S.inv > 0 && ((S.anim * 14) | 0) & 1)) { drawWake(tx, TY, Rr); if (st >= 3) { g.globalAlpha = .16; ell(tx, TY, Rr * 1.9, Rr * 1.9, '#7af0ff'); g.globalAlpha = 1; } drawTurtle(tx, TY, Rr, st, S.anim * 9, clamp(lean, -1, 1)); }
   } else { drawTurtle(tx, TY, Rr, st, S.anim * 2, 0); }
   if (st >= 3 && S.mode === 'play' && Math.random() < .3) spark(tx + (Math.random() - .5) * Rr * 2, TY + (Math.random() - .5) * Rr * 2, 1, ['#ffd23a', '#fff'], 10, -20);
-  g.drawImage(fgC, 0, 0);
+  g.drawImage(fgC, 0, 0, W, H);
   drawBubbles(true);
   for (i = 0; i < S.parts.length; i++) { var p = S.parts[i]; g.globalAlpha = clamp(p.life * 2, 0, 1); R(p.x, p.y, p.sz, p.sz, p.col); }
   g.globalAlpha = 1;
@@ -767,8 +728,7 @@ function render() {
   if (S.flash > 0) { g.globalAlpha = Math.min(.35, S.flash); R(0, 0, W, H, S.flashCol); g.globalAlpha = 1; }
   g.restore();
   drawHud(); drawMute(); drawOverlay();
-  var dpr = window.devicePixelRatio || 1;
-  ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
 }
 
 /* ---------- input and loop ---------- */
@@ -806,6 +766,9 @@ function resize() {
   var ww = window.innerWidth || 640, wh = window.innerHeight || 480, w = Math.min(ww, wh * 4 / 3), dpr = window.devicePixelRatio || 1;
   w = Math.max(160, Math.floor(w)); cv.style.width = w + 'px'; cv.style.height = Math.floor(w * .75) + 'px';
   cv.width = Math.round(w * dpr); cv.height = Math.round(w * .75 * dpr);
+  // the scene is drawn at 2x or 3x the 320x240 layout, whichever is closest to the real screen size
+  var q = clamp(Math.round(cv.width / W), 2, 3);
+  if (q !== Q) { Q = q; buf.width = bgC.width = fgC.width = W * Q; buf.height = bgC.height = fgC.height = H * Q; buildBg(); }
 }
 var last = 0;
 function frame(ts) {
@@ -813,7 +776,7 @@ function frame(ts) {
   update(dt); render(); window.requestAnimationFrame(frame);
 }
 
-buildBg(); reset(1, 'title');
+reset(1, 'title');
 window.addEventListener('resize', resize); resize();
 cv.addEventListener('pointerdown', onDown); window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onUp);
 cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });

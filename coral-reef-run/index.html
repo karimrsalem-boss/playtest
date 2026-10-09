@@ -259,7 +259,7 @@ function reset(stageNo, mode) {
   S = {
     mode: mode || 'title', t: 0, time: 60, D: 0, px: 1.5, tx: 1.5, sz: 1, pw: 0, hearts: 3, score: 0, rings: 0, stageNo: stageNo || 1,
     inv: 0, slow: 0, flash: 0, flashCol: '#fff', shake: 0, hint: stageNo === 1 || !S.seen, anim: S.anim || 0, objs: [], parts: [], pops: [], rr: 8, pop: 0,
-    rng: mulberry(1234 + (stageNo || 1) * 77), genD: 24, nextGate: 46, rowN: 0, v: 21, clearT: 0, tickN: 6, seen: S.seen, bonus: 0, hintT: 0
+    rng: mulberry(1234 + (stageNo || 1) * 77), genD: 24, nextGate: 46, rowN: 0, v: 16, clearT: 0, tickN: 6, seen: S.seen, bonus: 0, hintT: 0
   };
   initAmbient();
 }
@@ -290,19 +290,19 @@ function gen() {
     var d = S.genD, rn = S.rng, hz = Math.min(1, .15 + S.D / 1100 + (S.stageNo - 1) * .2), L = (rn() * 4) | 0, i, r = rn();
     if (S.nextGate <= d) { addGateRow(S.nextGate); S.genD = S.nextGate + 36; S.nextGate += 82 + rn() * 14; continue; }
     if (d > S.nextGate - 20) { S.genD = S.nextGate; continue; }
-    if (r < .42 || hz < .2 && r < .6) {
+    if (r < .5 || hz < .2 && r < .65) {
       for (i = 0; i < 5; i++) addItem('ring', d + i * 3.4, clamp(L + .55 * Math.sin(i * .9), 0, 3));
       S.genD += 5 * 3.4 + 7;
-    } else if (r < .78 || hz < .4) {
+    } else if (r < .85 || hz < .4) {
       var free = (L + 1 + (rn() * 3 | 0)) % 4;
-      for (i = 0; i < 4; i++) if (i !== free && (i === L || rn() < hz * .8 - .1)) addItem('urchin', d, i, rn() < .25 ? .35 : 0);
+      for (i = 0; i < 4; i++) if (i !== free && (i === L || rn() < hz * .4 - .1)) addItem('urchin', d, i, rn() < .25 ? .35 : 0);
       for (i = 0; i < 3; i++) addItem(i === 1 && rn() < .5 ? 'jelly' : 'ring', d - 2 + i * 3, free);
-      S.genD += 13;
+      S.genD += 18;
     } else {
       var gap = (rn() * 4) | 0;
       for (i = 0; i < 4; i++) if (i !== gap) addItem('urchin', d, i, 0);
       for (i = 0; i < 4; i++) addItem(i === 2 ? 'jelly' : 'ring', d - 4 + i * 3, gap);
-      S.genD += 14;
+      S.genD += 20;
     }
   }
 }
@@ -370,7 +370,7 @@ function update(dt) {
   S.t += dt; S.time = Math.max(0, 60 - S.t);
   if (S.inv > 0) S.inv -= dt;
   if (S.slow > 0) S.slow -= dt;
-  var base = 21 + 7 * (S.t / 60) + 1.6 * (S.stageNo - 1);
+  var base = 16 + 5 * (S.t / 60) + 1.2 * (S.stageNo - 1);
   var target = base * (1 + .12 * S.pw) * (S.slow > 0 ? .62 : 1);
   S.v += (target - S.v) * Math.min(1, dt * 4);
   S.D += S.v * dt; S.score += Math.round(S.v * dt * 2);

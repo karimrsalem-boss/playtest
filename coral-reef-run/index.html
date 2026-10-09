@@ -8,11 +8,16 @@
 <style>
 html,body{margin:0;height:100%;background:#06122e;overflow:hidden}
 body{display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+body{flex-direction:column}
 canvas{display:block;touch-action:none;outline:none}
+#pad{display:flex;width:100%;flex:none;touch-action:none;gap:8px;padding:8px;box-sizing:border-box;background:#06122e}
+#pad div{flex:1;border-radius:18px;border:3px solid #0a1740;background:linear-gradient(#2f64d8,#12308a);color:#fff;font:bold 30px "Trebuchet MS","Segoe UI",Verdana,Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-shadow:0 2px 0 #0a1740;box-shadow:inset 0 3px 0 rgba(255,255,255,.35)}
+#pad div.on{background:linear-gradient(#5ff0ff,#2f9bff)}
 </style>
 </head>
 <body>
 <canvas id="c" width="960" height="720" tabindex="0"></canvas>
+<div id="pad"><div id="padL">&#9664; LEFT</div><div id="padR">RIGHT &#9654;</div></div>
 <script>
 /*
  * CORAL REEF RUN - version 3
@@ -268,16 +273,22 @@ function initAmbient() {
 
 function laneOf(o) { return o.lane + (o.amp ? o.amp * Math.sin(S.t * 1.6 + o.ph) : 0); }
 function addGateRow(d) {
-  // two gates per row: one good (+SIZE or +POWER) and one bad (-SIZE or WEAKEN); the sides alternate
-  var pairs = [['gs', 'rs'], ['gp', 'vw'], ['gs', 'vw'], ['gp', 'rs']], p = pairs[S.rowN % 4].slice();
+  // two gates per row: one good for what comes next, one wrong. The obstacle after the row decides which is which:
+  // arch (needs size 1-2) -> -SIZE is right; bulk thicket (needs size 2+) -> +SIZE is right; rock wall (needs power) -> +POWER is right
+  var kinds = ['bulk', 'wall', 'arch', 'wall', 'bulk', 'arch'], kind = kinds[S.rowN % 6];
+  var p = kind === 'wall' ? ['gp', 'vw'] : kind === 'arch' ? ['rs', 'gs'] : ['gs', 'rs'];
   if (S.rowN > 0 && S.rng() < .5) p.reverse();
-  S.rowN++; S.objs.push({ k: 'gate', d: d, types: p, done: false });
+  S.rowN++; S.objs.push({ k: 'gate', d: d, types: p, done: false, kind: kind });
+  // obstacle row 20 units behind the gate: one free lane in each half of the road, so it can always be dodged
+  var fl = S.rng() < .5 ? 0 : 1, fr = S.rng() < .5 ? 2 : 3;
+  for (var i = 0; i < 4; i++) if (i !== fl && i !== fr) addItem(kind, d + 20, i, 0);
+  for (i = 0; i < 4; i++) if (i === fl || i === fr) addItem('ring', d + 20, i, 0);
 }
 function addItem(k, d, lane, amp) { S.objs.push({ k: k, d: d, lane: lane, amp: amp || 0, ph: S.rng() * 6, hit: false }); }
 function gen() {
   while (S.genD < S.D + 78) {
     var d = S.genD, rn = S.rng, hz = Math.min(1, .15 + S.D / 1100 + (S.stageNo - 1) * .2), L = (rn() * 4) | 0, i, r = rn();
-    if (S.nextGate <= d) { addGateRow(S.nextGate); S.genD = S.nextGate + 12; S.nextGate += 82 + rn() * 14; continue; }
+    if (S.nextGate <= d) { addGateRow(S.nextGate); S.genD = S.nextGate + 36; S.nextGate += 82 + rn() * 14; continue; }
     if (d > S.nextGate - 20) { S.genD = S.nextGate; continue; }
     if (r < .42 || hz < .2 && r < .6) {
       for (i = 0; i < 5; i++) addItem('ring', d + i * 3.4, clamp(L + .55 * Math.sin(i * .9), 0, 3));
@@ -317,7 +328,7 @@ function applyGate(type) {
     S.score += S.pw >= 3 ? 300 : 200; S.flash = .3; S.flashCol = '#5ff0ff'; sfx('power');
     spark(tx, TY, 36, ['#5ff0ff', '#fff', '#2f9bff'], 80, 0);
   } else if (type === 'rs') {
-    if (S.sz > 1) { S.sz--; popup('-SIZE', '#ff5a5a'); } else { S.score = Math.max(0, S.score - 200); popup('-200', '#ff5a5a'); }
+    if (S.sz > 1) { S.sz--; popup('-SIZE', '#ff5a5a'); } else popup('SMALLEST', '#ff9a9a');
     S.flash = .3; S.flashCol = '#ff3a4a'; sfx('down'); S.shake = .25;
     spark(tx, TY, 20, ['#ff3a4a', '#ff9aa0'], 50);
   } else {
@@ -384,7 +395,11 @@ function update(dt) {
     } else if (!o.hit && z <= .8 && z > -2.5) {
       if (Math.abs(S.px - laneOf(o)) < hw) {
         o.hit = true; var ex = 160 + (laneOf(o) - 1.5) * LW;
-        if (o.k === 'ring') { S.rings++; S.score += 100 + 25 * S.pw; sfx('ring'); spark(ex, TY - 8, 10, ['#ffd23a', '#fff6a0', '#fff'], 50); popup('+' + (100 + 25 * S.pw), '#ffe066', ex, TY - 28); }
+        if (o.k === 'arch' || o.k === 'bulk' || o.k === 'wall') {
+          var ok = o.k === 'arch' ? S.sz <= 2 : o.k === 'bulk' ? S.sz >= 2 : S.pw >= 1;
+          if (ok) { S.score += 150; sfx('ring'); spark(ex, TY - 8, 14, ['#ffd23a', '#fff', '#8affa0'], 55); popup(o.k === 'arch' ? 'SQUEEZED!' : o.k === 'bulk' ? 'PLOUGHED!' : 'SMASHED!', '#8affa0', ex, TY - 28); }
+          else hurt(o.k);
+        } else if (o.k === 'ring') { S.rings++; S.score += 100 + 25 * S.pw; sfx('ring'); spark(ex, TY - 8, 10, ['#ffd23a', '#fff6a0', '#fff'], 50); popup('+' + (100 + 25 * S.pw), '#ffe066', ex, TY - 28); }
         else hurt(o.k);
       }
     }
@@ -557,9 +572,31 @@ function drawProp(kind, side, z, idx) {
     brainCoral(x + 8 * s * side, by - 3 * s, 8 * s, CORAL[(hs >>> 3) % 7][0], CORAL[(hs >>> 3) % 7][1]);
   }
 }
+function drawBlock(k, x, by, s) {
+  var w = LW * .86 * s, h, i, lab = k === 'arch' ? 'SMALL' : k === 'bulk' ? 'BIG' : 'POWER';
+  var fa = g.globalAlpha; g.globalAlpha = fa * .3; ell(x, by, w * .6, 5 * s, NAVY); g.globalAlpha = fa;
+  if (k === 'arch') {
+    h = 40 * s; var pw = w * .2;
+    R(x - w / 2 - 1, by - h - 1, w + 2, h * .4 + 1, NAVY); R(x - w / 2 - 1, by - h, pw + 2, h + 1, NAVY); R(x + w / 2 - pw - 1, by - h, pw + 2, h + 1, NAVY);
+    R(x - w / 2, by - h, w, h * .38, '#ff7a5a'); R(x - w / 2, by - h, pw, h, '#ff7a5a'); R(x + w / 2 - pw, by - h, pw, h, '#e0584a');
+    R(x - w / 2, by - h, w, Math.max(1, h * .08), '#ffc0a8'); R(x - w / 2, by - h, Math.max(1, pw * .3), h, '#ffc0a8');
+    for (i = 0; i < 3; i++) ell(x - w * .3 + i * w * .3, by - h * .38, Math.max(1, 2 * s), Math.max(1, 3 * s), '#ffb09a');
+    h *= 1.0;
+  } else if (k === 'bulk') {
+    h = 38 * s;
+    for (i = -2; i <= 2; i++) weed(x + i * w * .22, by, h * (.8 + .1 * ((i * i) % 3)), i * 1.7, S.anim * 2, Math.max(2, 4 * s));
+  } else {
+    h = 38 * s;
+    R(x - w / 2 - 1, by - h - 1, w + 2, h + 1, NAVY); R(x - w / 2, by - h, w, h, '#8b97a6'); R(x - w / 2, by - h, w, Math.max(1, h * .12), '#c4cdd8'); R(x + w / 2 - w * .2, by - h, w * .2, h, '#6a7686');
+    line(x - w * .1, by - h, x + w * .05, by - h * .55, NAVY, Math.max(1, 1.4 * s)); line(x + w * .05, by - h * .55, x - w * .12, by - h * .15, NAVY, Math.max(1, 1.4 * s));
+    if (s > .35) bolt(x - w * .22, by - h * .5, Math.max(2, 6 * s), '#5ff0ff');
+  }
+  if (s > .38) { var ly = by - h - 8 * s - 4; text(lab, x, ly, Math.min(1.4, s * 1.5), '#fff', NAVY, 'c'); }
+}
 function drawItem(o, z) {
   var s = sc(z), lane = laneOf(o), x = lx(lane, s), by = yAt(z), bob = Math.sin(S.anim * 4 + o.ph) * 2 * s;
   g.globalAlpha = .3; ell(x, by, 14 * s, 4 * s, NAVY); g.globalAlpha = 1;
+  if (o.k === 'arch' || o.k === 'bulk' || o.k === 'wall') { if (!o.hit) drawBlock(o.k, x, by, s); return; }
   if (o.k === 'ring') {
     if (o.hit) return; var r = 12 * s; ring(x, by - 15 * s + bob, Math.max(2, r), S.anim * 3 + o.ph, true);
     if (((S.anim * 3 + o.ph) % 2) < .2) { line(x + r, by - 28 * s, x + r, by - 24 * s, '#fff', 1); line(x + r - 2, by - 26 * s, x + r + 2, by - 26 * s, '#fff', 1); }
@@ -592,13 +629,16 @@ function drawTurtle(cx, cy, Rr, st, ph, lean) {
   }
   if (st >= 3) { line(cx - .2 * Rr, cy + .55 * Rr, cx + .2 * Rr, cy + .55 * Rr, sl, k); line(cx, cy + .12 * Rr, cx, cy + .55 * Rr, sl, k); for (j = 0; j < 8; j++) R(cx + Math.cos(j * .8) * Rr * .93 - 1, cy + Math.sin(j * .8) * Rr * 1.04 - 1, 2, 2, '#fff2a8'); }
   var hx = cx + lean * Rr * .3, hy = cy - 1.2 * Rr;
-  ell(hx, hy, .34 * Rr + k, .32 * Rr + k, O); ell(hx, hy, .34 * Rr, .32 * Rr, G1); ell(hx, hy + .08 * Rr, .26 * Rr, .2 * Rr, '#b8f070');
-  var er = Math.max(1.2, .14 * Rr), ex = .17 * Rr;
-  ell(hx - ex, hy - .08 * Rr, er + .6, er + 1, '#fff'); ell(hx + ex, hy - .08 * Rr, er + .6, er + 1, '#fff');
-  ell(hx - ex, hy - .04 * Rr, Math.max(.6, er * .6), er * .8, '#7a3a0a'); ell(hx + ex, hy - .04 * Rr, Math.max(.6, er * .6), er * .8, '#7a3a0a');
-  R(hx - ex - 1, hy - .1 * Rr - 1, 1, 1, '#fff'); R(hx + ex - 1, hy - .1 * Rr - 1, 1, 1, '#fff');
-  R(hx - 1, hy + .17 * Rr, 3, 1, '#0a5a20');
-  for (j = 0; j < 4 + st * 2; j++) R(hx - .26 * Rr + (j * 7 % 11) / 11 * .52 * Rr, hy - .3 * Rr + (j * 5 % 7) / 7 * .2 * Rr, 1, 1, G3);
+  // big round friendly head: large shiny eyes, rosy cheeks, little smile
+  ell(hx, hy, .44 * Rr + k, .4 * Rr + k, O); ell(hx, hy, .44 * Rr, .4 * Rr, G1); ell(hx, hy + .12 * Rr, .34 * Rr, .22 * Rr, '#c8f58a'); ell(hx - .1 * Rr, hy - .22 * Rr, .16 * Rr, .08 * Rr, '#a6ff8a');
+  var er = Math.max(1.8, .2 * Rr), ex = .22 * Rr, ey = hy - .04 * Rr;
+  ell(hx - ex, ey, er + .8, er * 1.15 + .8, O); ell(hx + ex, ey, er + .8, er * 1.15 + .8, O);
+  ell(hx - ex, ey, er, er * 1.15, '#fff'); ell(hx + ex, ey, er, er * 1.15, '#fff');
+  ell(hx - ex + lean * er * .2, ey + er * .1, er * .68, er * .85, '#3a1c08'); ell(hx + ex + lean * er * .2, ey + er * .1, er * .68, er * .85, '#3a1c08');
+  ell(hx - ex - er * .22, ey - er * .3, Math.max(.8, er * .3), Math.max(.8, er * .3), '#fff'); ell(hx + ex - er * .22, ey - er * .3, Math.max(.8, er * .3), Math.max(.8, er * .3), '#fff');
+  ell(hx - ex + er * .25, ey + er * .35, Math.max(.4, er * .13), Math.max(.4, er * .13), '#fff'); ell(hx + ex + er * .25, ey + er * .35, Math.max(.4, er * .13), Math.max(.4, er * .13), '#fff');
+  var ga = g.globalAlpha; g.globalAlpha = ga * .75; ell(hx - .36 * Rr, hy + .14 * Rr, .1 * Rr + .6, .06 * Rr + .5, '#ff8aa8'); ell(hx + .36 * Rr, hy + .14 * Rr, .1 * Rr + .6, .06 * Rr + .5, '#ff8aa8'); g.globalAlpha = ga;
+  g.strokeStyle = '#0a5a20'; g.lineWidth = Math.max(.8, Rr * .06); g.lineCap = 'round'; g.beginPath(); g.arc(hx, hy + .12 * Rr, .12 * Rr + .5, .25, 2.9); g.stroke();
 }
 function drawWake(cx, cy, Rr) {
   var t = S.anim * 14, i, n = 5;
@@ -665,9 +705,9 @@ function drawOverlay() {
   if (S.mode === 'title') {
     dim(.35);
     text('CORAL', cx, 56, 7, '#ffe14a', NAVY, 'c'); text('REEF RUN', cx, 94, 7, '#5ff0ff', NAVY, 'c');
-    text('GRAB RINGS - PICK THE GOOD GATE', cx, 138, 1.6, '#fff', NAVY, 'c');
+    text('GRAB RINGS - PICK THE GATE THAT FITS', cx, 138, 1.4, '#fff', NAVY, 'c');
     btn = button('TAP TO PLAY', cx, 176, 3);
-    text('DRAG OR ARROW KEYS', cx, 206, 1, '#fff', NAVY, 'c');
+    text('PAD BELOW OR ARROW KEYS', cx, 206, 1, '#fff', NAVY, 'c');
   } else if (S.mode === 'clear') {
     dim(.55);
     panel(60, 40, 200, 160);
@@ -688,7 +728,7 @@ function drawOverlay() {
   if (S.mode === 'play' && S.hint) {
     var a = Math.min(1, (7 - S.t) / 1.5); g.globalAlpha = Math.max(0, a);
     rrect(40, 34, 240, 32, 5, 'rgba(5,14,50,.7)');
-    text('DRAG OR USE ARROW KEYS', cx, 40, 2, '#fff', NAVY, 'c'); text('GRAB RINGS - PICK THE GOOD GATE', cx, 55, 1, '#ffe14a', NAVY, 'c');
+    text('STEER WITH THE PAD OR ARROW KEYS', cx, 38, 1.6, '#fff', NAVY, 'c'); text('PICK THE GATE THAT FITS THE OBSTACLE AHEAD', cx, 54, 1, '#ffe14a', NAVY, 'c');
     g.globalAlpha = 1;
   }
 }
@@ -762,8 +802,26 @@ function onKey(e, dn) {
   if (dn && (c === 'ArrowLeft' || c === 'ArrowRight' || c === 'KeyA' || c === 'KeyD' || c === 'KeyQ') ) { audioInit(); if (S.mode === 'title') act(); }
   if (h && e.preventDefault) e.preventDefault();
 }
+/* steering pad below the playfield: hold a half (or slide between them); same result as the arrow keys */
+var padEl = document.getElementById('pad'), padL = document.getElementById('padL'), padR = document.getElementById('padR'), padOn = false;
+function padSet(e) {
+  var r = padEl.getBoundingClientRect(), left = (e.clientX - r.left) < r.width / 2;
+  keys.l = left ? 1 : 0; keys.r = left ? 0 : 1; S.hint = false;
+  if (padL.className !== undefined) { padL.className = left ? 'on' : ''; padR.className = left ? '' : 'on'; }
+}
+function padOff() { padOn = false; keys.l = keys.r = 0; padL.className = padR.className = ''; }
+padEl.addEventListener('pointerdown', function (e) {
+  audioInit(); if (e.preventDefault) e.preventDefault();
+  if (S.mode === 'play') { padOn = true; padSet(e); try { padEl.setPointerCapture(e.pointerId); } catch (x) { } return; }
+  if (S.mode === 'clear' || S.mode === 'over') { if (S.clearT > .6) act(); return; }
+  act();
+});
+padEl.addEventListener('pointermove', function (e) { if (padOn && S.mode === 'play') padSet(e); });
+padEl.addEventListener('pointerup', padOff); padEl.addEventListener('pointercancel', padOff); padEl.addEventListener('lostpointercapture', padOff);
 function resize() {
-  var ww = window.innerWidth || 640, wh = window.innerHeight || 480, w = Math.min(ww, wh * 4 / 3), dpr = window.devicePixelRatio || 1;
+  var ww = window.innerWidth || 640, wh = window.innerHeight || 480, padH = Math.round(clamp(wh * .17, 64, 120)), dpr = window.devicePixelRatio || 1;
+  var w = Math.min(ww, (wh - padH) * 4 / 3);
+  padEl.style.height = padH + 'px';
   w = Math.max(160, Math.floor(w)); cv.style.width = w + 'px'; cv.style.height = Math.floor(w * .75) + 'px';
   cv.width = Math.round(w * dpr); cv.height = Math.round(w * .75 * dpr);
   // the scene buffer matches the real screen size in device pixels (2x to 6x the 320x240 layout), so nothing is upscaled

@@ -606,8 +606,20 @@ function drawItem(o, z) {
     jelly(x, by - 24 * s + bob, Math.max(3, 13 * s), S.anim, '#ff7ad8', '#c040c0');
   }
 }
-function drawTurtle(cx, cy, Rr, st, ph, lean) {
-  var O = NAVY, G1 = '#5cf04a', G2 = '#2fb83a', G3 = '#167a30', k = Math.max(1, Math.round(Rr / 9)), j;
+/* five turtle designs to pick from on the title screen: body light/mid/dark, shell rim/mid/hi/lines */
+var SKINS = [
+  { n: 'LIME', g1: '#5cf04a', g2: '#2fb83a', g3: '#167a30', s1: '#f2b01e', s2: '#b96a16', s3: '#d98a24', s4: '#ffd36b', sl: '#6e3a0e', acc: 0 },
+  { n: 'SUNNY', g1: '#ffd23a', g2: '#e8962a', g3: '#a8601a', s1: '#3fd0d8', s2: '#1a7a9a', s3: '#2aa6b8', s4: '#b8fbff', sl: '#0c4a66', acc: 1 },
+  { n: 'OCEAN', g1: '#7ec8ff', g2: '#3a8ae0', g3: '#1a4aa0', s1: '#b07af0', s2: '#6a3ab8', s3: '#8a58d8', s4: '#e0c8ff', sl: '#3a1c78', acc: 0 },
+  { n: 'ROSY', g1: '#ffa8cc', g2: '#e8609a', g3: '#a02e6a', s1: '#7af0b0', s2: '#2fa87a', s3: '#4cd098', s4: '#d0ffe8', sl: '#14684a', acc: 2 },
+  { n: 'MOSS', g1: '#a8d870', g2: '#6a9a3a', g3: '#3a5e1a', s1: '#8a8a98', s2: '#4a4a5c', s3: '#6a6a7e', s4: '#c8c8d8', sl: '#2a2a3a', acc: 3 }
+];
+var skin = 0;
+try { var sv = parseInt(window.localStorage.getItem('crr-skin'), 10); if (sv >= 0 && sv < SKINS.length) skin = sv; } catch (x) { }
+function pickSkin(i) { skin = i; try { window.localStorage.setItem('crr-skin', String(i)); } catch (x) { } }
+function drawTurtle(cx, cy, Rr, st, ph, lean, sk) {
+  sk = sk || SKINS[skin];
+  var O = NAVY, G1 = sk.g1, G2 = sk.g2, G3 = sk.g3, k = Math.max(1, Math.round(Rr / 9)), j;
   function flip(bx, by, L, wd, a, m) {
     var dx = Math.cos(a) * m, dy = Math.sin(a), x0 = cx + m * bx, y0 = cy + by, ang = m > 0 ? a : Math.PI - a;
     ell(x0 + dx * L / 2, y0 + dy * L / 2, L / 2 + k, wd + k, O, ang); ell(x0 + dx * L / 2, y0 + dy * L / 2, L / 2, wd, G2, ang);
@@ -617,9 +629,10 @@ function drawTurtle(cx, cy, Rr, st, ph, lean) {
   flip(.5 * Rr, .55 * Rr, .8 * Rr, .2 * Rr, 1.1 + .25 * Math.sin(ph + 1.6), 1); flip(.5 * Rr, .55 * Rr, .8 * Rr, .2 * Rr, 1.1 + .25 * Math.sin(ph + 1.6), -1);
   flip(.72 * Rr, -.25 * Rr, 1.05 * Rr, .27 * Rr, .45 + .4 * Math.sin(ph), 1); flip(.72 * Rr, -.25 * Rr, 1.05 * Rr, .27 * Rr, .45 + .4 * Math.sin(ph), -1);
   ell(cx, cy + 1.1 * Rr, .12 * Rr + 1, .2 * Rr, G2);
-  ell(cx, cy, Rr * .98 + k, Rr * 1.1 + k, O); ell(cx, cy, Rr * .98, Rr * 1.1, '#f2b01e'); ell(cx, cy, Rr * .84, Rr * .95, '#b96a16');
-  ell(cx - Rr * .2, cy - Rr * .28, Rr * .45, Rr * .5, '#d98a24'); ell(cx - Rr * .3, cy - Rr * .42, Rr * .14, Rr * .1, '#ffd36b');
-  var sl = '#6e3a0e';
+  ell(cx, cy, Rr * .98 + k, Rr * 1.1 + k, O); ell(cx, cy, Rr * .98, Rr * 1.1, sk.s1); ell(cx, cy, Rr * .84, Rr * .95, sk.s2);
+  ell(cx - Rr * .2, cy - Rr * .28, Rr * .45, Rr * .5, sk.s3); ell(cx - Rr * .3, cy - Rr * .42, Rr * .14, Rr * .1, sk.s4);
+  var sl = sk.sl;
+  if (sk.acc === 1) { ell(cx + Rr * .35, cy + Rr * .4, Rr * .12 + .5, Rr * .12 + .5, sk.s4); ell(cx - Rr * .4, cy + Rr * .55, Rr * .09 + .4, Rr * .09 + .4, sk.s4); }
   line(cx - .33 * Rr, cy - .42 * Rr, cx + .33 * Rr, cy - .42 * Rr, sl, k); line(cx - .33 * Rr, cy + .12 * Rr, cx + .33 * Rr, cy + .12 * Rr, sl, k);
   line(cx - .33 * Rr, cy - .42 * Rr, cx - .33 * Rr, cy + .12 * Rr, sl, k); line(cx + .33 * Rr, cy - .42 * Rr, cx + .33 * Rr, cy + .12 * Rr, sl, k);
   if (st >= 2) {
@@ -639,6 +652,8 @@ function drawTurtle(cx, cy, Rr, st, ph, lean) {
   ell(hx - ex + er * .25, ey + er * .35, Math.max(.4, er * .13), Math.max(.4, er * .13), '#fff'); ell(hx + ex + er * .25, ey + er * .35, Math.max(.4, er * .13), Math.max(.4, er * .13), '#fff');
   var ga = g.globalAlpha; g.globalAlpha = ga * .75; ell(hx - .36 * Rr, hy + .14 * Rr, .1 * Rr + .6, .06 * Rr + .5, '#ff8aa8'); ell(hx + .36 * Rr, hy + .14 * Rr, .1 * Rr + .6, .06 * Rr + .5, '#ff8aa8'); g.globalAlpha = ga;
   g.strokeStyle = '#0a5a20'; g.lineWidth = Math.max(.8, Rr * .06); g.lineCap = 'round'; g.beginPath(); g.arc(hx, hy + .12 * Rr, .12 * Rr + .5, .25, 2.9); g.stroke();
+  if (sk.acc === 2) { var bx = hx + .3 * Rr, by2 = hy - .36 * Rr; ell(bx - .13 * Rr, by2, .14 * Rr + .5, .1 * Rr + .5, '#fff'); ell(bx + .13 * Rr, by2, .14 * Rr + .5, .1 * Rr + .5, '#fff'); ell(bx - .13 * Rr, by2, .12 * Rr, .08 * Rr, '#ff4a8a'); ell(bx + .13 * Rr, by2, .12 * Rr, .08 * Rr, '#ff4a8a'); ell(bx, by2, .06 * Rr + .4, .06 * Rr + .4, '#ffd23a'); }
+  if (sk.acc === 3) { ell(hx, hy - .36 * Rr, .3 * Rr + k, .13 * Rr + k, O); ell(hx, hy - .36 * Rr, .3 * Rr, .13 * Rr, '#e84a4a'); ell(hx, hy - .4 * Rr, .18 * Rr, .06 * Rr, '#ff9a9a'); }
 }
 function drawWake(cx, cy, Rr) {
   var t = S.anim * 14, i, n = 5;
@@ -704,10 +719,16 @@ function drawOverlay() {
   var cx = 160;
   if (S.mode === 'title') {
     dim(.35);
-    text('CORAL', cx, 56, 7, '#ffe14a', NAVY, 'c'); text('REEF RUN', cx, 94, 7, '#5ff0ff', NAVY, 'c');
-    text('GRAB RINGS - PICK THE GATE THAT FITS', cx, 138, 1.4, '#fff', NAVY, 'c');
-    btn = button('TAP TO PLAY', cx, 176, 3);
-    text('PAD BELOW OR ARROW KEYS', cx, 206, 1, '#fff', NAVY, 'c');
+    text('CORAL', cx, 34, 7, '#ffe14a', NAVY, 'c'); text('REEF RUN', cx, 72, 7, '#5ff0ff', NAVY, 'c');
+    for (var si = 0; si < SKINS.length; si++) {
+      var sx = cx + (si - 2) * 44, on = si === skin;
+      if (on) { g.globalAlpha = .35; ell(sx, 132, 20, 22, '#fff'); g.globalAlpha = 1; }
+      drawTurtle(sx, 133 + (on ? Math.sin(S.anim * 6) * 1.5 : 0), on ? 10 : 8, 1, S.anim * (on ? 6 : 1), 0, SKINS[si]);
+      text(String(si + 1), sx, 148, 1, on ? '#ffe14a' : '#fff', NAVY, 'c');
+    }
+    text('PICK YOUR TURTLE: ' + SKINS[skin].n, cx, 158, 1.2, '#fff', NAVY, 'c');
+    btn = button('TAP TO PLAY', cx, 184, 3);
+    text('PAD BELOW OR ARROW KEYS', cx, 210, 1, '#fff', NAVY, 'c');
   } else if (S.mode === 'clear') {
     dim(.55);
     panel(60, 40, 200, 160);
@@ -784,6 +805,10 @@ function act() {
 function onDown(e) {
   var p = toLow(e); audioInit();
   if (inRect(p, muteBtn())) { setMuted(!muted); sfx('click'); return; }
+  if (S.mode === 'title' && p.y > 105 && p.y < 152 && !inRect(p, btn)) {
+    var pi = Math.round((p.x - 160) / 44) + 2;
+    if (pi >= 0 && pi < SKINS.length && Math.abs(p.x - (160 + (pi - 2) * 44)) < 22) { pickSkin(pi); sfx('click'); return; }
+  }
   if (S.mode === 'play') { ptr.down = true; S.tx = clamp((p.x - 160) / LW + 1.5, 0, 3); S.hint = false; try { cv.setPointerCapture(e.pointerId); } catch (x) { } return; }
   if (S.mode === 'clear' || S.mode === 'over') { if (S.clearT > .6) act(); return; }
   act();
@@ -796,6 +821,7 @@ function onKey(e, dn) {
   if (c === 'ArrowLeft' || c === 'KeyA' || c === 'KeyQ') keys.l = dn ? 1 : 0;
   else if (c === 'ArrowRight' || c === 'KeyD') keys.r = dn ? 1 : 0;
   else if (dn && (c === 'Space' || c === 'Enter')) { if (S.mode === 'clear' || S.mode === 'over') { if (S.clearT > .6) act(); } else if (S.mode !== 'play') act(); }
+  else if (dn && S.mode === 'title' && /^(Digit|Numpad)[1-5]$/.test(c)) { audioInit(); pickSkin(parseInt(c.slice(-1), 10) - 1); sfx('click'); }
   else if (dn && c === 'KeyM') { audioInit(); setMuted(!muted); }
   else if (dn && c === 'KeyP') { if (S.mode === 'play') pause(); else if (S.mode === 'pause') act(); }
   else h = false;

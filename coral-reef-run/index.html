@@ -518,7 +518,7 @@ function gshape(cx, by, w, h, col) {
   var ry = h * .34, rx = w / 2; ell(cx, by - h + ry, rx, ry, col); R(cx - rx, by - h + ry, w, h - ry, col);
 }
 function drawGate(type, cx, by, s, gi) {
-  var gold = type === 'gs', P = GP[type], w = LW * 2 * s * .9, h = (gold ? 126 : 108) * s, th = Math.max(1, 2 * s), t = S.anim, i;
+  var gold = type === 'gs', P = GP[type], w = LW * 2 * s * .97, h = (gold ? 126 : 108) * s, th = Math.max(1, 2 * s), t = S.anim, i;
   var fa = g.globalAlpha; g.globalAlpha = fa * (.26 + .1 * Math.sin(t * 4 + gi)); ell(cx, by - h * .5, w * .7, h * .62, P.glow); g.globalAlpha = fa;
   gshape(cx, by, w + 2 * th, h + th, NAVY); gshape(cx, by, w, h, P.stone);
   var f = Math.max(2, w * .1), oh = h - f * 1.5, ow = w - 2 * f;
@@ -766,8 +766,8 @@ function resize() {
   var ww = window.innerWidth || 640, wh = window.innerHeight || 480, w = Math.min(ww, wh * 4 / 3), dpr = window.devicePixelRatio || 1;
   w = Math.max(160, Math.floor(w)); cv.style.width = w + 'px'; cv.style.height = Math.floor(w * .75) + 'px';
   cv.width = Math.round(w * dpr); cv.height = Math.round(w * .75 * dpr);
-  // the scene is drawn at 2x or 3x the 320x240 layout, whichever is closest to the real screen size
-  var q = clamp(Math.round(cv.width / W), 2, 3);
+  // the scene buffer matches the real screen size in device pixels (2x to 6x the 320x240 layout), so nothing is upscaled
+  var q = Math.round(clamp(cv.width / W, 2, 6) * 100) / 100;
   if (q !== Q) { Q = q; buf.width = bgC.width = fgC.width = W * Q; buf.height = bgC.height = fgC.height = H * Q; buildBg(); }
 }
 var last = 0;

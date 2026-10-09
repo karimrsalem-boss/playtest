@@ -276,7 +276,7 @@ function addGateRow(d) {
   // two gates per row: one good for what comes next, one wrong. The obstacle after the row decides which is which:
   // arch (needs size 1-2) -> -SIZE is right; bulk thicket (needs size 2+) -> +SIZE is right; rock wall (needs power) -> +POWER is right
   var kinds = ['bulk', 'wall', 'arch', 'wall', 'bulk', 'arch'], kind = kinds[S.rowN % 6];
-  var p = kind === 'wall' ? ['gp', 'vw'] : kind === 'arch' ? ['rs', 'gs'] : ['gs', 'rs'];
+  var p = kind === 'wall' ? ['gp', 'rs'] : kind === 'arch' ? ['rs', 'gs'] : ['gs', 'rs'];
   if (S.rowN > 0 && S.rng() < .5) p.reverse();
   S.rowN++; S.objs.push({ k: 'gate', d: d, types: p, done: false, kind: kind });
   // obstacle row 20 units behind the gate: one free lane in each half of the road, so it can always be dodged
@@ -294,14 +294,14 @@ function gen() {
       for (i = 0; i < 5; i++) addItem('ring', d + i * 3.4, clamp(L + .55 * Math.sin(i * .9), 0, 3));
       S.genD += 5 * 3.4 + 7;
     } else if (r < .78 || hz < .4) {
-      var kd = rn() < .5 ? 'urchin' : 'jelly', free = (L + 1 + (rn() * 3 | 0)) % 4;
-      for (i = 0; i < 4; i++) if (i !== free && (i === L || rn() < hz * .8 - .1)) addItem(kd === 'jelly' && rn() < .5 ? 'jelly' : kd, d, i, kd === 'jelly' && i !== free && rn() < .4 ? .35 : 0);
-      for (i = 0; i < 3; i++) addItem('ring', d - 2 + i * 3, free);
+      var free = (L + 1 + (rn() * 3 | 0)) % 4;
+      for (i = 0; i < 4; i++) if (i !== free && (i === L || rn() < hz * .8 - .1)) addItem('urchin', d, i, rn() < .25 ? .35 : 0);
+      for (i = 0; i < 3; i++) addItem(i === 1 && rn() < .5 ? 'jelly' : 'ring', d - 2 + i * 3, free);
       S.genD += 13;
     } else {
       var gap = (rn() * 4) | 0;
-      for (i = 0; i < 4; i++) if (i !== gap) addItem(rn() < .5 ? 'urchin' : 'jelly', d, i, 0);
-      for (i = 0; i < 4; i++) addItem('ring', d - 4 + i * 3, gap);
+      for (i = 0; i < 4; i++) if (i !== gap) addItem('urchin', d, i, 0);
+      for (i = 0; i < 4; i++) addItem(i === 2 ? 'jelly' : 'ring', d - 4 + i * 3, gap);
       S.genD += 14;
     }
   }
@@ -327,22 +327,17 @@ function applyGate(type) {
     if (S.pw < 3) { S.pw++; popup('+POWER!', '#5ff0ff'); } else popup('+300', '#5ff0ff');
     S.score += S.pw >= 3 ? 300 : 200; S.flash = .3; S.flashCol = '#5ff0ff'; sfx('power');
     spark(tx, TY, 36, ['#5ff0ff', '#fff', '#2f9bff'], 80, 0);
-  } else if (type === 'rs') {
+  } else {
     if (S.sz > 1) { S.sz--; popup('-SIZE', '#ff5a5a'); } else popup('SMALLEST', '#ff9a9a');
     S.flash = .3; S.flashCol = '#ff3a4a'; sfx('down'); S.shake = .25;
     spark(tx, TY, 20, ['#ff3a4a', '#ff9aa0'], 50);
-  } else {
-    if (S.pw > 0) S.pw--; S.slow = 2.5; popup('WEAKEN', '#c47bff');
-    S.flash = .3; S.flashCol = '#a040ff'; sfx('weaken'); S.shake = .15;
-    spark(tx, TY, 20, ['#a040ff', '#e0a8ff'], 50);
   }
 }
 function hurt(kind) {
   if (S.inv > 0) return;
   S.inv = 1.5; S.shake = .3; S.flash = .25; S.flashCol = '#ff6a8a'; sfx('hurt');
   var tx = turtleX(); spark(tx, TY - 6, 24, ['#fff', '#ffb0d0', '#a040ff'], 70);
-  if (kind === 'jelly') { S.slow = 1.8; if (S.pw > 0) { S.pw--; popup('POWER LOST', '#c47bff', 160, 130); return; } }
-  if (S.sz > 1) { S.sz--; popup('OUCH! -SIZE', '#ff9a9a', 160, 130); } else { S.hearts--; popup('OUCH!', '#ff9a9a', 160, 130); }
+    if (S.sz > 1) { S.sz--; popup('OUCH! -SIZE', '#ff9a9a', 160, 130); } else { S.hearts--; popup('OUCH!', '#ff9a9a', 160, 130); }
 }
 
 function startPlay() {
@@ -400,6 +395,7 @@ function update(dt) {
           if (ok) { S.score += 150; sfx('ring'); spark(ex, TY - 8, 14, ['#ffd23a', '#fff', '#8affa0'], 55); popup(o.k === 'arch' ? 'SQUEEZED!' : o.k === 'bulk' ? 'PLOUGHED!' : 'SMASHED!', '#8affa0', ex, TY - 28); }
           else hurt(o.k);
         } else if (o.k === 'ring') { S.rings++; S.score += 100 + 25 * S.pw; sfx('ring'); spark(ex, TY - 8, 10, ['#ffd23a', '#fff6a0', '#fff'], 50); popup('+' + (100 + 25 * S.pw), '#ffe066', ex, TY - 28); }
+        else if (o.k === 'jelly') { S.score += 150; sfx('ring'); spark(ex, TY - 10, 12, ['#ff7ad8', '#ffd0f0', '#fff'], 55); popup('YUM! +150', '#ffb0ec', ex, TY - 28); }
         else hurt(o.k);
       }
     }
@@ -417,7 +413,7 @@ function lx(l, s) { return 160 + (l - 1.5) * LW * s; }
 
 var TILES = ['#ddd3ab', '#d3c89e', '#cabe92', '#c2b586'];
 function drawRoad() {
-  var D = S.D, FOG = '#2a8fd8', y, i, rh = 1 / Q, n;
+  var D = S.D, FOG = '#2a8fd8', y, i, rh = 1.5 / Q, n;
   for (n = 0; (y = HOR + 1 + n * rh) < H; n++) {
     var s = (y - HOR) / (YB - HOR), z = CZ * (1 / s - 1), sb = (y - rh - HOR) / (YB - HOR), zb = CZ * (1 / sb - 1);
     var fog = Math.min(.8, Math.max(0, (.6 - s) * 1.5));
@@ -526,8 +522,7 @@ function jelly(cx, cy, r, t, col, dark) {
 var GP = {
   gs: { stone: '#e8cf74', glow: '#ffe066', rim: '#ffd23a', in1: '#0e5a24', in2m: '#1c9a3c', in2: '#3ae060', lab: '+SIZE' },
   gp: { stone: '#a9d4dc', glow: '#4ff0ff', rim: '#4ff0ff', in1: '#06214e', in2m: '#0b4a9a', in2: '#1a86e8', lab: '+POWER' },
-  rs: { stone: '#c9a8a8', glow: '#ff3a4a', rim: '#ff3a4a', in1: '#3a0612', in2m: '#74102a', in2: '#b81f3a', lab: '-SIZE' },
-  vw: { stone: '#c0a8d8', glow: '#c040ff', rim: '#d070ff', in1: '#25063e', in2m: '#4e1190', in2: '#8a2cd0', lab: 'WEAKEN' }
+  rs: { stone: '#c9a8a8', glow: '#ff3a4a', rim: '#ff3a4a', in1: '#3a0612', in2m: '#74102a', in2: '#b81f3a', lab: '-SIZE' }
 };
 function gshape(cx, by, w, h, col) {
   var ry = h * .34, rx = w / 2; ell(cx, by - h + ry, rx, ry, col); R(cx - rx, by - h + ry, w, h - ry, col);
@@ -553,8 +548,7 @@ function drawGate(type, cx, by, s, gi) {
   var ey = by - oh * .34;
   if (type === 'gs') { ring(cx, ey, emR * 1.15, 0, true); chev(cx, by - oh * .1, emR * 1.5, 1, '#3aff60', Math.max(1.4, emR * .26)); if (s > .35) ring(cx, by - h - 1 * s + ry * .35, Math.max(3, w * .08), 0, true); }
   else if (type === 'gp') { bolt(cx, ey, emR * 1.05, '#fff'); chev(cx, by - oh * .1, emR * 1.5, 1, '#4ff0ff', Math.max(1.4, emR * .26)); bolt(cx, by - oh * .82, emR * .5, '#fff'); }
-  else if (type === 'rs') { urchinSpr(cx, ey, Math.max(2, emR * .7), t, false); chev(cx, by - oh * .1, emR * 1.5, -1, '#ff4a5a', Math.max(1.4, emR * .26)); xmark(cx, by - oh * .82, emR * .55); }
-  else { jelly(cx, ey - emR * .1, Math.max(2, emR * .85), t, '#d070ff', '#8a2cd0'); chev(cx, by - oh * .1, emR * 1.5, -1, '#c070ff', Math.max(1.4, emR * .26)); xmark(cx, by - oh * .82, emR * .55); }
+  else { urchinSpr(cx, ey, Math.max(2, emR * .7), t, false); chev(cx, by - oh * .1, emR * 1.5, -1, '#ff4a5a', Math.max(1.4, emR * .26)); xmark(cx, by - oh * .82, emR * .55); }
   if (gold && s > .3) { for (i = 0; i < 3; i++) { var sp = (t * 2 + i * 1.7) % 3; if (sp < .6) ell(cx - w * .4 + i * w * .4, by - h * (.3 + i * .15), 1, 1, '#fff'); } }
 }
 function drawProp(kind, side, z, idx) {
@@ -851,7 +845,7 @@ function resize() {
   w = Math.max(160, Math.floor(w)); cv.style.width = w + 'px'; cv.style.height = Math.floor(w * .75) + 'px';
   cv.width = Math.round(w * dpr); cv.height = Math.round(w * .75 * dpr);
   // the scene buffer matches the real screen size in device pixels (2x to 6x the 320x240 layout), so nothing is upscaled
-  var q = Math.round(clamp(cv.width / W, 2, 6) * 100) / 100;
+  var q = Math.round(clamp(cv.width / W, 2, 3) * 100) / 100;
   if (q !== Q) { Q = q; buf.width = bgC.width = fgC.width = W * Q; buf.height = bgC.height = fgC.height = H * Q; buildBg(); }
 }
 var last = 0;
